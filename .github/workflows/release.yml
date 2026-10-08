@@ -1,0 +1,45 @@
+name: Publish Linux release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: meu-app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: meu-app
+        run: npm ci
+
+      - name: Build AppImage
+        working-directory: meu-app
+        run: npm run package:linux
+
+      - name: Create ZIP
+        working-directory: meu-app
+        run: zip -j release/ChickenDoom-AppImages.zip release/*.AppImage
+
+      - name: Publish GitHub Release
+        working-directory: meu-app
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            release/ChickenDoom-AppImages.zip \
+            --title "Chicken Doom $GITHUB_REF_NAME" \
+            --generate-notes
