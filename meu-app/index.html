@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHICKEN DOOM - O Núcleo do Tempo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body class="bg-black text-white select-none overflow-hidden">
+
+    <div id="canvas-container"></div>
+
+    <div class="absolute inset-0 scanlines z-10 pointer-events-none"></div>
+    <div class="absolute inset-0 vignette z-10 pointer-events-none"></div>
+    <div id="damage-flash" class="absolute inset-0 bg-red-600/60 opacity-0 transition-opacity duration-100 z-20 pointer-events-none"></div>
+
+    <!-- Mira Crosshair -->
+    <div id="crosshair-container" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-20 hidden">
+        <div class="w-8 h-8 relative flex items-center justify-center">
+            <div class="absolute w-1 h-3 bg-red-500 top-0"></div>
+            <div class="absolute w-1 h-3 bg-red-500 bottom-0"></div>
+            <div class="absolute h-1 w-3 bg-red-500 left-0"></div>
+            <div class="absolute h-1 w-3 bg-red-500 right-0"></div>
+            <div class="w-1.5 h-1.5 bg-yellow-400 rounded-full"></div>
+
+            <div id="hitmarker" class="absolute inset-0 opacity-0 flex items-center justify-center">
+                <div class="w-6 h-0.5 bg-yellow-300 rotate-45 absolute"></div>
+                <div class="w-6 h-0.5 bg-yellow-300 -rotate-45 absolute"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="damage-numbers-container" class="absolute inset-0 z-20 pointer-events-none overflow-hidden"></div>
+
+    <!-- HUD do Chefe -->
+    <div id="boss-hud" class="absolute top-6 left-1/2 transform -translate-x-1/2 w-11/12 max-w-xl z-20 hidden">
+        <div class="bg-black/80 border-2 border-red-700 p-2 rounded text-center shadow-lg">
+            <div id="boss-name" class="text-red-500 text-sm md:text-base font-bold tracking-widest uppercase mb-1">CHEFE DAS GALINHAS</div>
+            <div class="w-full bg-zinc-900 h-5 border border-red-900 rounded overflow-hidden">
+                <div id="boss-hp-bar" class="bg-gradient-to-r from-red-800 to-red-500 h-full w-full transition-all duration-150"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUD Quake Principal -->
+    <div id="hud" class="absolute bottom-0 left-0 right-0 p-3 z-20 hidden pointer-events-none">
+        <div class="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-2 retro-panel p-3 text-center rounded-lg">
+            <div class="flex flex-col items-center justify-center border-r border-amber-900/60">
+                <span class="text-xs text-amber-500 tracking-widest font-bold">VIDA</span>
+                <div class="text-3xl md:text-4xl text-red-500 font-bold flex items-center gap-1">
+                    <span id="hud-health">100</span><span class="text-sm">%</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col items-center justify-center border-r border-amber-900/60">
+                <span class="text-xs text-amber-500 tracking-widest font-bold">ESCUDO</span>
+                <div class="text-3xl md:text-4xl text-cyan-400 font-bold flex items-center gap-1">
+                    <span id="hud-shield">50</span><span class="text-sm">%</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col items-center justify-center border-r border-amber-900/60">
+                <span id="hud-ammo-label" class="text-xs text-amber-500 tracking-widest font-bold">MUNIÇÃO</span>
+                <div class="text-3xl md:text-4xl text-yellow-400 font-bold">
+                    <span id="hud-ammo">30 / 240</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col items-center justify-center border-r border-amber-900/60">
+                <span class="text-xs text-amber-500 tracking-widest font-bold">PENAS / XP</span>
+                <div class="text-3xl md:text-4xl text-amber-300 font-bold">
+                    <span id="hud-feathers">0</span> 🪶
+                </div>
+            </div>
+
+            <div class="col-span-2 md:col-span-1 flex flex-col items-center justify-center">
+                <span class="text-xs text-amber-500 tracking-widest font-bold">DIMENSÃO TEMPORAL</span>
+                <div id="hud-epoch" class="text-sm text-cyan-300 font-bold uppercase truncate max-w-full">
+                    1. Pré-História
+                </div>
+                <span id="hud-hint" class="text-xs text-gray-400 mt-0.5">[ESC/P] Pause | [U] Oficina</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MENU DE PAUSE -->
+    <div id="pause-screen" class="absolute inset-0 bg-black/80 z-50 hidden flex flex-col items-center justify-center p-6 text-center">
+        <div class="max-w-md w-full bg-zinc-950 p-8 rounded-xl retro-panel space-y-6">
+            <h2 class="text-3xl md:text-4xl text-amber-500 quake-title tracking-wider">JOGO PAUSADO</h2>
+            
+            <div class="space-y-3 font-mono text-base">
+                <button id="btn-resume" class="w-full py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold text-xl rounded border border-amber-400 transition">
+                    CONTINUAR [ESC]
+                </button>
+                <button id="btn-diff" class="w-full py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-lg rounded border border-gray-400 transition">DIFICULDADE</button>
+                <button id="btn-checkpoint" class="hidden w-full py-3 bg-sky-800 hover:bg-sky-700 text-white font-bold text-lg rounded border border-sky-400 transition">
+                    📍 VOLTAR AO CHECKPOINT
+                </button>
+                <button id="btn-hub" class="w-full py-3 bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xl rounded border border-emerald-400 transition">
+                    VOLTAR AO HUB
+                </button>
+                <button id="btn-restart" class="w-full py-3 bg-red-900 hover:bg-red-800 text-white font-bold text-xl rounded border border-red-500 transition">
+                    💾 SALVAR E SAIR PARA O MENU
+                </button>
+            </div>
+
+            <div class="bg-black/70 p-4 rounded border border-amber-900/60 space-y-3 text-left">
+                <label class="text-sm text-amber-400 font-bold block">VOLUME PRINCIPAL</label>
+                <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.8" class="w-full accent-amber-500 cursor-pointer">
+                
+                <div class="text-xs text-gray-400 mt-2 space-y-1">
+                    <p>• <b class="text-white">ESC / P</b>: Pausar / Continuar</p>
+                    <p>• <b class="text-white">W, A, S, D</b>: Mover em 360°</p>
+                    <p>• <b class="text-white">Espaço</b>: Pular (<b class="text-amber-400">segure</b> p/ B-HOP: no ar, vire o mouse + A/D p/ ganhar velocidade)</p>
+                    <p>• <b class="text-white">Shift</b>: Sprint &nbsp; <b class="text-white">Espaço no ar</b>: Pulo duplo &nbsp; <b class="text-white">C</b>: Deslizar (corra antes p/ ganhar impulso; -50% de dano; passa por vãos baixos)</p>
+                    <p>• <b class="text-white">Q no ar</b>: Air Dash (1 por salto; invulnerável durante o impulso; na direção do WASD)</p>
+                    
+                    <p>• <b class="text-white">Chicken Shift</b> (<b class="text-white">F</b>): alterna <b class="text-violet-300">Presente/Passado</b>. Paredes do presente somem no passado e inimigos próximos congelam por 3s. O passado dura 10s; depois você volta ao presente (liberado ao completar as 8 eras)</p>
+                    <p>• <b class="text-white">Segredos de habilidade</b>: cada era esconde salas que exigem Deslize, Air Dash, Recoil Jump ou Chicken Shift — volte depois para pegar as recompensas</p>
+                    <p>• <b class="text-white">Recoil Jump</b>: com 🚀 Lança-Foguetes, 💣 Lança-Granadas ou 🐔 Canhão de Frango, atire no chão/parede perto de você — a explosão te lança (custa um pouco de vida, nunca mata)</p>
+                    <p>• <b class="text-white">I</b>: Inventário / Build &nbsp; <b class="text-white">H</b>: Usar item de cura</p>
+                    <p>• <b class="text-white">E</b>: Interagir (loja, bigorna, NPCs)</p>
+                    <p>• <b class="text-white">1 a 4</b>: Armas da barra</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA INICIAL -->
+    <div id="start-screen" class="absolute inset-0 bg-black/95 z-40 flex flex-col items-center justify-center p-6 text-center">
+        <div class="max-w-2xl max-h-[94vh] overflow-y-auto bg-zinc-950 p-8 rounded-xl retro-panel space-y-6">
+            <h1 class="text-2xl md:text-4xl text-red-600 quake-title leading-tight animate-pulse">
+                CHICKEN DOOM
+            </h1>
+            <p class="text-lg md:text-xl text-amber-400 font-bold tracking-wide">
+                APOCALIPSE DAS GALINHAS ZUMBIS DO TEMPO
+            </p>
+
+            <div class="text-left text-gray-300 text-sm md:text-base space-y-2 bg-black/70 p-4 rounded border border-amber-900/50">
+                <p class="text-yellow-400 font-bold text-center">🌀 8 DIMENSÕES DA JORNADA TEMPORAL:</p>
+                <p>1. <b class="text-amber-500">Pré-História & Templo Antigo</b> - O início da infecção</p>
+                <p>2. <b class="text-yellow-500">Império Romano</b> - Gladiadores Zumbis de Pena</p>
+                <p>3. <b class="text-purple-400">Castelo Medieval</b> - Cavaleiros e Névoa Mística</p>
+                <p>4. <b class="text-cyan-400">Estação Cyberpunk</b> - Ciborgues com Laser</p>
+                <p>5. <b class="text-yellow-600">Tumba do Faraó</b> · 6. <b class="text-lime-500">Pântano Sombrio</b> · 7. <b class="text-red-400">Galinheiro Infernal</b></p>
+                <p>8. <b class="text-red-500">O Núcleo Cósmico (FINAL)</b> - O Supremo Lorde Galinha</p>
+                <p class="text-emerald-300 pt-2">🏛️ Comece no <b>HUB TEMPORAL</b>: entre nos portais, derrote o chefe para liberar o próximo e visite a <b>Loja do Cacareco</b> [E].</p>
+            </div>
+
+            <div class="space-y-2"><p class="text-amber-400 font-bold">DIFICULDADE <span class="text-xs text-gray-400">(para novas runs)</span></p><div id="diff-buttons" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div></div>
+                <div class="space-y-2"><p class="text-amber-400 font-bold">💾 SUAS RUNS <span class="text-xs text-gray-400">(cada run tem seu próprio save e checkpoints)</span></p><div id="run-slots" class="space-y-2"></div></div>
+        </div>
+    </div>
+
+    <!-- TELA DE VITÓRIA (JOGO ZERADO) -->
+    <div id="victory-screen" class="absolute inset-0 bg-black/95 z-50 hidden flex flex-col items-center justify-center p-6 text-center">
+        <div class="max-w-2xl bg-zinc-950 p-8 rounded-xl victory-panel space-y-6">
+            <h1 class="text-2xl md:text-4xl text-emerald-400 victory-title leading-tight animate-bounce">
+                JOGO ZERADO!
+            </h1>
+            <p class="text-lg text-emerald-200 font-bold tracking-wide">
+                O SUPREMO LORDE GALINHA FOI DESTRUIDO E A LINHA TEMPORAL FOI SALVA!
+            </p>
+
+            <div class="grid grid-cols-2 gap-4 bg-black/80 p-5 rounded border border-emerald-800/80 text-left font-mono text-base">
+                <div>
+                    <span class="text-gray-400 block text-xs">GALINHAS ABATIDAS:</span>
+                    <span id="victory-kills" class="text-2xl text-yellow-400 font-bold">0</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block text-xs">TEMPO DE JOGO:</span>
+                    <span id="victory-time" class="text-2xl text-cyan-400 font-bold">00:00</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block text-xs">PENAS COLETADAS:</span>
+                    <span id="victory-feathers" class="text-2xl text-amber-300 font-bold">0</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block text-xs">PONTUAÇÃO FINAL:</span>
+                    <span id="victory-score" class="text-2xl text-emerald-400 font-bold">0</span>
+                </div>
+            </div>
+
+            <button id="btn-play-again" class="w-full py-4 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xl md:text-2xl rounded border-2 border-emerald-400 victory-title transition transform hover:scale-105">
+                VOLTAR AO HUB
+            </button>
+        </div>
+    </div>
+
+    <!-- UPGRADE MODAL (TECLA U) -->
+    <div id="upgrade-modal" class="absolute inset-0 bg-black/90 z-30 hidden flex items-center justify-center p-4">
+        <div class="max-w-2xl w-full max-h-[92vh] overflow-y-auto bg-zinc-950 p-6 rounded-xl retro-panel space-y-6 text-center">
+            <div class="border-b border-amber-800 pb-3">
+                <h2 class="text-2xl md:text-3xl text-amber-500 quake-title">🔨 BIGORNA DO PINTINHO</h2>
+                <p class="text-gray-400 text-base mt-1">Afie suas armas e aprimore o arsenal</p>
+                <div class="mt-2 text-xl text-yellow-300 font-bold">
+                    Penas Disponíveis: <span id="upgrade-feathers-count" class="text-2xl text-amber-400">0</span> 🪶
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-black/60 p-4 rounded-lg border border-amber-900/60 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg text-amber-400 font-bold">Cadência de Tiro</h3>
+                        <p class="text-xs text-gray-400 mt-1">Disparo super rápido da arma equipada.</p>
+                        <p class="text-xs text-cyan-400 mt-2">Nível: <span id="lvl-firerate">1</span></p>
+                    </div>
+                    <button id="btn-up-firerate" class="mt-3 py-2 px-4 bg-amber-800 hover:bg-amber-700 disabled:opacity-40 text-white font-bold rounded border border-amber-400 transition">
+                        Melhorar (<span id="cost-firerate">20</span> Penas)
+                    </button>
+                </div>
+
+                <div class="bg-black/60 p-4 rounded-lg border border-amber-900/60 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg text-red-400 font-bold">Dano Aumentado</h3>
+                        <p class="text-xs text-gray-400 mt-1">Multiplica o dano por projétil.</p>
+                        <p class="text-xs text-cyan-400 mt-2">Nível: <span id="lvl-damage">1</span></p>
+                    </div>
+                    <button id="btn-up-damage" class="mt-3 py-2 px-4 bg-red-800 hover:bg-red-700 disabled:opacity-40 text-white font-bold rounded border border-amber-400 transition">
+                        Melhorar (<span id="cost-damage">25</span> Penas)
+                    </button>
+                </div>
+
+                <div class="bg-black/60 p-4 rounded-lg border border-amber-900/60 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg text-yellow-400 font-bold">Estoque de Munição & Escudo</h3>
+                        <p class="text-xs text-gray-400 mt-1">+25% de munição reserva máxima em todas as armas, reabastece tudo e restaura Escudo (+50%).</p>
+                        <p class="text-xs text-cyan-400 mt-2">Nível: <span id="lvl-ammo">1</span></p>
+                    </div>
+                    <button id="btn-up-ammo" class="mt-3 py-2 px-4 bg-yellow-800 hover:bg-yellow-700 disabled:opacity-40 text-white font-bold rounded border border-amber-400 transition">
+                        Comprar (<span id="cost-ammo">15</span> Penas)
+                    </button>
+                </div>
+
+                <div class="bg-black/60 p-4 rounded-lg border border-amber-900/60 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg text-purple-400 font-bold">Tiro Triplo de Plasma</h3>
+                        <p class="text-xs text-gray-400 mt-1">Dispara 3 projéteis de energia simultâneos.</p>
+                        <p class="text-xs text-cyan-400 mt-2">Status: <span id="lvl-plasma">Inativo</span></p>
+                    </div>
+                    <button id="btn-up-plasma" class="mt-3 py-2 px-4 bg-purple-800 hover:bg-purple-700 disabled:opacity-40 text-white font-bold rounded border border-amber-400 transition">
+                        Ativar (<span id="cost-plasma">50</span> Penas)
+                    </button>
+                </div>
+            </div>
+
+            <div id="anvil-weapons" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-left"></div>
+                <div class="pt-2 flex justify-center">
+                <button id="btn-close-upgrade" class="py-3 px-8 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-lg rounded border border-gray-400">
+                    FECHAR (E)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="hub-hint" class="absolute bottom-32 left-1/2 transform -translate-x-1/2 z-20 hidden px-4 py-2 retro-panel text-xl text-yellow-300 text-center pointer-events-none rounded"></div>
+
+    <div id="toast" class="absolute top-24 left-1/2 transform -translate-x-1/2 z-30 hidden px-5 py-3 retro-panel text-2xl text-emerald-300 text-center pointer-events-none rounded"></div>
+
+    <div id="npc-modal" class="absolute inset-0 bg-black/90 z-30 hidden flex items-center justify-center p-4">
+        <div class="max-w-lg w-full bg-zinc-950 p-6 rounded-xl retro-panel space-y-4 text-center">
+            <h2 id="npc-title" class="text-xl md:text-2xl text-amber-500 quake-title"></h2>
+            <p id="npc-text" class="text-xl text-gray-200"></p>
+            <button id="npc-btn" class="hidden py-3 px-8 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xl rounded border border-emerald-300"></button>
+            <div><button id="btn-close-npc" class="py-2 px-6 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded border border-gray-400">FECHAR (E)</button></div>
+        </div>
+    </div>
+
+    <div id="inv-modal" class="absolute inset-0 bg-black/90 z-30 hidden flex items-center justify-center p-4">
+        <div class="max-w-3xl w-full max-h-[92vh] overflow-y-auto bg-zinc-950 p-6 rounded-xl retro-panel space-y-4 text-center">
+            <h2 class="text-xl md:text-3xl text-amber-500 quake-title">🎒 INVENTÁRIO &amp; BUILD</h2>
+            <div id="inv-body" class="text-left space-y-4"></div>
+            <button id="btn-close-inv" class="py-3 px-8 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-lg rounded border border-gray-400">FECHAR (I)</button>
+        </div>
+    </div>
+
+    <!-- LOJA DO CACARECO -->
+    <div id="shop-modal" class="absolute inset-0 bg-black/90 z-30 hidden flex items-center justify-center p-4">
+        <div class="max-w-3xl w-full max-h-[92vh] overflow-y-auto bg-zinc-950 p-6 rounded-xl retro-panel space-y-4 text-center">
+            <div class="border-b border-amber-800 pb-3">
+                <h2 class="text-xl md:text-3xl text-amber-500 quake-title">🐔 LOJA DO CACARECO</h2>
+                <p class="text-gray-300 text-lg mt-2">"Cocoricó, viajante! Troque suas penas por poder!"</p>
+                <div class="mt-2 text-xl text-yellow-300 font-bold">Penas: <span id="shop-feathers" class="text-2xl text-amber-400">0</span> 🪶</div>
+            </div>
+            <div id="shop-items" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-left"></div>
+            <button id="btn-close-shop" class="py-3 px-8 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-lg rounded border border-gray-400">SAIR DA LOJA (E)</button>
+        </div>
+    </div>
+
+    <!-- TELA DE MENSAGENS E TRANSIÇÃO -->
+    <div id="game-message-screen" class="absolute inset-0 bg-black/95 z-40 hidden flex flex-col items-center justify-center p-6 text-center">
+        <div class="max-w-xl bg-zinc-950 p-8 rounded-xl retro-panel space-y-6">
+            <h2 id="msg-title" class="text-2xl md:text-4xl text-red-600 quake-title">VOCÊ MORREU</h2>
+            <p id="msg-desc" class="text-lg md:text-xl text-gray-300">As galinhas zumbis dominaram o contínuo espaço-tempo.</p>
+            <button id="msg-btn" class="py-4 px-8 bg-amber-700 hover:bg-amber-600 text-white font-bold text-xl rounded border-2 border-yellow-300 quake-title">
+                REINICIAR
+            </button>
+            <div><button id="msg-btn2" class="hidden py-3 px-8 bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-lg rounded border-2 border-emerald-400 quake-title"></button></div>
+        </div>
+    </div>
+
+<script type="module" src="/script-loader.js"></script>
+</body>
+</html>
