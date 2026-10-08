@@ -12,7 +12,8 @@
     "dev": "vite",
     "start": "npm run build && electron .",
     "build": "vite build",
-    "package:linux": "npm run build && electron-builder --linux AppImage --publish never"
+    "package:linux": "npm run build && electron-builder --linux AppImage --publish never",
+    "package:windows": "npm run build && electron-builder --win nsis --x64 --publish never"
   },
   "dependencies": {
     "esbuild": "^0.25.12",
@@ -50,6 +51,12 @@
         "AppImage"
       ],
       "artifactName": "Chicken-Doom-${version}-${arch}.${ext}"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "Chicken-Doom-Setup.${ext}"
     }
   }
 }

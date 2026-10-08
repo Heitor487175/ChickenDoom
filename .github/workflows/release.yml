@@ -1,4 +1,4 @@
-name: Publish Linux release
+name: Publish Chicken Doom release
 
 on:
   push:
@@ -15,7 +15,7 @@ permissions:
   contents: write
 
 jobs:
-  publish:
+  build-linux:
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -40,14 +40,72 @@ jobs:
         working-directory: meu-app
         run: zip -j release/ChickenDoom-AppImages.zip release/*.AppImage
 
-      - name: Publish GitHub Release
+      - name: Upload Linux assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-release-assets
+          path: meu-app/release/ChickenDoom-AppImages.zip
+          if-no-files-found: error
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: meu-app/package-lock.json
+
+      - name: Install dependencies
         working-directory: meu-app
+        run: npm ci
+
+      - name: Build Windows installer
+        working-directory: meu-app
+        run: npm run package:windows
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-assets
+          path: meu-app/release/Chicken-Doom-Setup.exe
+          if-no-files-found: error
+
+  publish:
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Linux assets
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-release-assets
+          path: release-assets/linux
+
+      - name: Download Windows installer
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-release-assets
+          path: release-assets/windows
+
+      - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
-          gh release create "$RELEASE_TAG" \
-            release/ChickenDoom-AppImages.zip \
-            --title "Chicken Doom $RELEASE_TAG" \
-            --target "$GITHUB_SHA" \
-            --generate-notes
+          assets=(
+            release-assets/linux/ChickenDoom-AppImages.zip
+            release-assets/windows/Chicken-Doom-Setup.exe
+          )
+
+          if gh release view "$RELEASE_TAG" --json tagName >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" \
+              --title "Chicken Doom $RELEASE_TAG" \
+              --target "$GITHUB_SHA" \
+              --generate-notes
+          fi
