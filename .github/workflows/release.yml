@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Tag da versão a publicar, por exemplo v1.0.0
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -38,8 +44,10 @@ jobs:
         working-directory: meu-app
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
+          gh release create "$RELEASE_TAG" \
             release/ChickenDoom-AppImages.zip \
-            --title "Chicken Doom $GITHUB_REF_NAME" \
+            --title "Chicken Doom $RELEASE_TAG" \
+            --target "$GITHUB_SHA" \
             --generate-notes
