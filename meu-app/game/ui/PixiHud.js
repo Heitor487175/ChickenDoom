@@ -28,13 +28,24 @@ export class PixiHud {
         const top = this.#createPanel();
         const left = this.#createPanel();
         const right = this.#createPanel();
-        stage.addChild(menuBackground, top.container, left.container, right.container);
+        const notification = this.#createOverlay(15, 0x7cecff);
+        const interactionHint = this.#createOverlay(13, 0xffdf7e);
+        stage.addChild(
+            menuBackground,
+            top.container,
+            left.container,
+            right.container,
+            notification.container,
+            interactionHint.container
+        );
 
         this.#elements = {
             menuBackground,
             top,
             left,
             right,
+            notification,
+            interactionHint,
             healthBar: new Graphics(),
             shieldBar: new Graphics(),
             objectiveBar: new Graphics(),
@@ -47,10 +58,12 @@ export class PixiHud {
         top.container.addChild(this.#elements.objectiveBar);
 
         this.#application.ticker.add(() => this.#updateVisibility());
+        this.#application.ticker.add(() => this.#updateOverlays());
         this.#application.ticker.add(() => this.#pulseLowHealth());
         window.addEventListener("resize", () => {
             this.#render();
             this.#renderMenuBackground();
+            this.#updateOverlays();
         });
         this.#render();
     }
@@ -58,6 +71,37 @@ export class PixiHud {
     update(state) {
         this.#state = state;
         this.#render();
+    }
+
+    notify(message, duration = 3500) {
+        if (!this.#elements) return;
+        const notification = this.#elements.notification;
+        notification.text.text = message;
+        notification.container.visible = true;
+        notification.expiresAt = performance.now() + duration;
+        this.#layoutOverlay(notification, window.innerWidth / 2, window.innerHeight * 0.32);
+    }
+
+    #createOverlay(fontSize, accent) {
+        const container = new Container();
+        const background = new Graphics();
+        const text = new Text({
+            text: "",
+            style: {
+                fontFamily: "Arial, sans-serif",
+                fontSize,
+                fontWeight: "700",
+                fill: 0xffffff,
+                align: "center",
+                wordWrap: true,
+                wordWrapWidth: Math.min(window.innerWidth - 56, 520),
+                lineHeight: fontSize * 1.45
+            }
+        });
+        text.anchor.set(0.5);
+        container.addChild(background, text);
+        container.visible = false;
+        return { container, background, text, accent, baseFontSize: fontSize, expiresAt: 0, lastText: "" };
     }
 
     #createPanel() {
@@ -218,6 +262,62 @@ export class PixiHud {
             this.#menuVisible = menuVisible;
             this.#renderMenuBackground();
         }
+    }
+
+    #updateOverlays() {
+        if (!this.#elements) return;
+        const { notification, interactionHint } = this.#elements;
+        const now = performance.now();
+
+        if (notification.container.visible) {
+            if (now >= notification.expiresAt) {
+                notification.container.visible = false;
+            } else {
+                notification.container.alpha = Math.min(1, (notification.expiresAt - now) / 300);
+            }
+        }
+
+        const hintElement = document.getElementById("hub-hint");
+        if (
+            this.#menuVisible ||
+            !hintElement ||
+            hintElement.classList.contains("hidden") ||
+            !hintElement.innerText.trim()
+        ) {
+            interactionHint.container.visible = false;
+            return;
+        }
+
+        const hint = hintElement.innerText.trim();
+        if (hint !== interactionHint.lastText) {
+            interactionHint.lastText = hint;
+            interactionHint.text.text = hint;
+            this.#layoutOverlay(
+                interactionHint,
+                window.innerWidth / 2,
+                window.innerHeight - (this.#isCompact() ? 180 : 195)
+            );
+        }
+        interactionHint.container.visible = true;
+    }
+
+    #layoutOverlay(overlay, centerX, centerY) {
+        const compact = this.#isCompact();
+        const maxWidth = Math.max(160, Math.min(window.innerWidth - 40, compact ? 360 : 540));
+        overlay.text.style.wordWrapWidth = maxWidth - 32;
+        overlay.text.style.fontSize = compact ? Math.min(overlay.baseFontSize, 12) : overlay.baseFontSize;
+        overlay.text.position.set(centerX, centerY);
+
+        const boxWidth = Math.min(maxWidth, Math.max(190, overlay.text.width + 32));
+        const boxHeight = Math.max(38, overlay.text.height + 20);
+        overlay.background.clear()
+            .roundRect(centerX - boxWidth / 2, centerY - boxHeight / 2, boxWidth, boxHeight, 5)
+            .fill({ color: 0x06121e, alpha: 0.9 })
+            .stroke({ color: overlay.accent, alpha: 0.84, width: 1.5 });
+    }
+
+    #isCompact() {
+        return window.innerWidth < 600;
     }
 
     #renderMenuBackground() {

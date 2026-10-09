@@ -24,31 +24,24 @@
 
     <!-- Mira Crosshair -->
     <div id="crosshair-container" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-20 hidden">
-        <div class="w-8 h-8 relative flex items-center justify-center">
-            <div class="absolute w-1 h-3 bg-red-500 top-0"></div>
-            <div class="absolute w-1 h-3 bg-red-500 bottom-0"></div>
-            <div class="absolute h-1 w-3 bg-red-500 left-0"></div>
-            <div class="absolute h-1 w-3 bg-red-500 right-0"></div>
-            <div class="w-1.5 h-1.5 bg-yellow-400 rounded-full"></div>
-
-            <div id="hitmarker" class="absolute inset-0 opacity-0 flex items-center justify-center">
-                <div class="w-6 h-0.5 bg-yellow-300 rotate-45 absolute"></div>
-                <div class="w-6 h-0.5 bg-yellow-300 -rotate-45 absolute"></div>
-            </div>
+        <div id="hitmarker" class="crosshair-reticle" aria-hidden="true">
+            <span class="crosshair-tick crosshair-tick-top"></span>
+            <span class="crosshair-tick crosshair-tick-bottom"></span>
+            <span class="crosshair-tick crosshair-tick-left"></span>
+            <span class="crosshair-tick crosshair-tick-right"></span>
+            <span class="crosshair-core"></span>
+            <span class="hit-ray hit-ray-0"></span>
+            <span class="hit-ray hit-ray-1"></span>
+            <span class="hit-ray hit-ray-2"></span>
+            <span class="hit-ray hit-ray-3"></span>
+            <span class="hit-ray hit-ray-4"></span>
+            <span class="hit-ray hit-ray-5"></span>
+            <span class="hit-ray hit-ray-6"></span>
+            <span class="hit-ray hit-ray-7"></span>
         </div>
     </div>
 
     <div id="damage-numbers-container" class="absolute inset-0 z-20 pointer-events-none overflow-hidden"></div>
-
-    <!-- HUD do Chefe -->
-    <div id="boss-hud" class="absolute top-6 left-1/2 transform -translate-x-1/2 w-11/12 max-w-xl z-20 hidden">
-        <div class="bg-black/80 border-2 border-red-700 p-2 rounded text-center shadow-lg">
-            <div id="boss-name" class="text-red-500 text-sm md:text-base font-bold tracking-widest uppercase mb-1">CHEFE DAS GALINHAS</div>
-            <div class="w-full bg-zinc-900 h-5 border border-red-900 rounded overflow-hidden">
-                <div id="boss-hp-bar" class="bg-gradient-to-r from-red-800 to-red-500 h-full w-full transition-all duration-150"></div>
-            </div>
-        </div>
-    </div>
 
     <!-- HUD Quake Principal -->
     <div id="hud" class="absolute bottom-0 left-0 right-0 p-3 z-20 hidden pointer-events-none" aria-hidden="true">
@@ -262,8 +255,6 @@
     </div>
 
     <div id="hub-hint" class="absolute bottom-32 left-1/2 transform -translate-x-1/2 z-20 hidden px-4 py-2 retro-panel text-xl text-yellow-300 text-center pointer-events-none rounded"></div>
-
-    <div id="toast" class="absolute top-24 left-1/2 transform -translate-x-1/2 z-30 hidden px-5 py-3 retro-panel text-2xl text-emerald-300 text-center pointer-events-none rounded"></div>
 
     <div id="npc-modal" class="absolute inset-0 bg-black/90 z-30 hidden flex items-center justify-center p-4">
         <div class="max-w-lg w-full bg-zinc-950 p-6 rounded-xl retro-panel space-y-4 text-center">

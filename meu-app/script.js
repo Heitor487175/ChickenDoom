@@ -398,7 +398,6 @@
                     checkGates,
                     syncHUD: updatePixiHUD,
                     handleBossDefeated: enemy => {
-                        document.getElementById('boss-hud').classList.add('hidden');
                         const epoch = EPOCHS[gameState.currentEpochIndex];
                         const bonus = completeLevel(gameState.currentEpochIndex);
                         if (epoch.extra) showGameMessage("ERA EXTRA SUPERADA!", `O chefe da ${epoch.name} caiu! +${bonus} 🪶 de bônus. Volte à sala do HUB para entrar de novo ou escolher outro portal.`, "VOLTAR AO HUB");
@@ -431,7 +430,7 @@
         // munição por arma: cada arma tem pente (mag) e reserva (res) próprios
         const AMMO_DROP_CHANCE = 0.25; // chance de uma galinha comum dropar munição
         const reload = { on: false, id: null, left: 0, total: 0 };
-        let usedDouble = false, activeModal = null, invSel = 0, currentQuest = null, toastT = 0;
+        let usedDouble = false, activeModal = null, invSel = 0, currentQuest = null;
 
         const DIFFS = [
             { n: 'FÁCIL', hp: 0.7, dmg: 0.6, spd: 0.85, fe: 0.8 },
@@ -472,10 +471,7 @@
             g.health = Math.min(g.health, g.maxHealth);
         }
         function toast(msg) {
-            const e = document.getElementById('toast');
-            e.innerText = msg; e.classList.remove('hidden');
-            clearTimeout(toastT);
-            toastT = setTimeout(() => e.classList.add('hidden'), 3500);
+            pixiHud.notify(msg);
         }
 
         // ===== SISTEMA DE RUNS (SAVES SEPARADOS) =====
@@ -607,7 +603,6 @@
             levelObstacles.forEach(o => scene.remove(o));
             enemies = []; bullets = []; enemyProjectiles = []; particles = []; items = [];
             nav.ver++; levelObstacles = []; colliders = []; hubPortals = []; hubStations = []; gates = []; secretWalls = []; hubCrystal = null;
-            document.getElementById('boss-hud').classList.add('hidden');
             document.getElementById('hub-hint').classList.add('hidden');
         }
 
@@ -1436,8 +1431,6 @@
 
             if (isBoss) {
                 gameState.bossEntity = enemyObj;
-                document.getElementById('boss-hud').classList.remove('hidden');
-                document.getElementById('boss-name').innerText = `CHEFE: ${epoch.bossType.replace(/_/g, ' ').toUpperCase()}`;
                 updateBossHPBar();
             }
         }
@@ -1673,10 +1666,14 @@
             });
         }
 
+        let hitmarkerTimeout = 0;
         function triggerHitmarker() {
             const hm = document.getElementById('hitmarker');
-            hm.style.opacity = '1';
-            setTimeout(() => { hm.style.opacity = '0'; }, 80);
+            clearTimeout(hitmarkerTimeout);
+            hm.classList.remove('is-hit');
+            void hm.offsetWidth;
+            hm.classList.add('is-hit');
+            hitmarkerTimeout = setTimeout(() => hm.classList.remove('is-hit'), 280);
         }
 
         function spawnDamageNumber(amount, isCrit = false) {
@@ -1879,8 +1876,6 @@
 
         function updateBossHPBar() {
             if (gameState.bossEntity) {
-                const pct = Math.max(0, (gameState.bossEntity.hp / gameState.bossEntity.maxHp) * 100);
-                document.getElementById('boss-hp-bar').style.width = `${pct}%`;
                 updatePixiHUD();
             }
         }
@@ -1951,7 +1946,6 @@
 
             document.getElementById('victory-screen').classList.remove('hidden');
             document.getElementById('hud').classList.add('hidden');
-            document.getElementById('boss-hud').classList.add('hidden');
             document.getElementById('crosshair-container').classList.add('hidden');
         }
 
@@ -2586,7 +2580,12 @@ function showPuzzle(d) {
     const msg = () => document.getElementById('pz-msg').innerText = (L.known ? 'Código: ' + L.seq.map(i => DN[i]).join(' ') + '\n' : 'Digite 3 cores. Procure um terminal de dados na fase!\n') + 'Entrada: ' + inp.map(i => DN[i]).join(' ');
     const bx = document.getElementById('pz-btns'); bx.innerHTML = '';
     DCOL.forEach((c, i) => {
-        const b = document.createElement('button'); b.style.cssText = 'width:64px;height:64px;border:3px solid #fff;background:' + c; b.onclick = () => {
+        const b = document.createElement('button');
+        b.className = 'puzzle-color-button';
+        b.setAttribute('aria-label', `Cor ${DN[i]}`);
+        b.title = `Selecionar ${DN[i]}`;
+        b.style.setProperty('--puzzle-color', c);
+        b.onclick = () => {
             inp.push(i); audio.playPickup();
             if (inp.length === 3) {
                 if (inp.every((v, k) => v === L.seq[k])) { closeModal(); openDoor(d, '🔓 ACESSO CONCEDIDO!'); }
