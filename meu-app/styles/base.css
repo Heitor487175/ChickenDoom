@@ -1,0 +1,7 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #000;
+    font-family: 'VT323', monospace;
+    user-select: none;
+}

@@ -1,0 +1,4 @@
+@keyframes floatUp {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -100%) scale(1.4); opacity: 0; }
+}
