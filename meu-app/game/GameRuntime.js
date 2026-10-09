@@ -2,12 +2,14 @@ import { SoundEngine } from "../audio/SoundEngine.js";
 import { LocalStorageAdapter } from "../storage/LocalStorageAdapter.js";
 import { CombatSystem } from "./combat/CombatSystem.js";
 import { SaveManager } from "./progress/SaveManager.js";
+import { WeaponSystem } from "./weapons/WeaponSystem.js";
 
 export class GameRuntime {
     #audio = new SoundEngine();
     #storage = new LocalStorageAdapter();
     #combatSystem = null;
     #saveManager = null;
+    #weaponSystem = null;
     #initializeEngine;
     #animate;
 
@@ -30,6 +32,17 @@ export class GameRuntime {
 
     initializeProgress(dependencies) {
         this.#saveManager = new SaveManager(dependencies);
+    }
+
+    initializeWeapons(dependencies) {
+        this.#weaponSystem = new WeaponSystem(dependencies);
+    }
+
+    get weaponSystem() {
+        if (!this.#weaponSystem) {
+            throw new Error("O sistema de armas ainda não foi inicializado.");
+        }
+        return this.#weaponSystem;
     }
 
     get activeRun() {

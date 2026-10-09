@@ -18,6 +18,10 @@ O catálogo de eras e suas propriedades visuais fica em [`meu-app/game/maps/MapC
 
 Os construtores de geometria e as mecânicas específicas de cada fase ainda estão em [`meu-app/script.js`](./meu-app/script.js): `e1` a `e8` definem as eras principais e `eMuseu`, `eArranha`, `eColapso` e `eBiblioteca` definem as eras extras. Esses construtores são registrados no `MapManager`; ao criar uma nova era, mantenha o índice alinhado com `EPOCHS` e registre seu construtor correspondente.
 
+## Armas
+
+O catálogo, as categorias, raridades, ofertas da loja e configurações dos projéteis ficam em [`meu-app/game/weapons/WeaponCatalog.js`](./meu-app/game/weapons/WeaponCatalog.js). A lógica de munição, recarga, disparo e equipamento está em [`meu-app/game/weapons/WeaponSystem.js`](./meu-app/game/weapons/WeaponSystem.js), e os modelos e pickups visuais em [`meu-app/game/weapons/WeaponVisuals.js`](./meu-app/game/weapons/WeaponVisuals.js).
+
 ## Publicar uma nova versão
 
 Depois de enviar o workflow para `main`, abra **Actions → Publish Chicken Doom release → Run workflow**, selecione a branch `main` e informe uma tag, por exemplo `v1.0.0`. O workflow gera o AppImage e o instalador `.exe`, então cria ou atualiza o Release com os dois downloads.

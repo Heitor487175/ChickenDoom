@@ -2,6 +2,8 @@
         import { GameRuntime } from "./game/GameRuntime.js";
         import { EPOCHS, HUB_COLORS } from "./game/maps/MapCatalog.js";
         import { MapManager } from "./game/maps/MapManager.js";
+        import { WEAPONS, WEAPON_TYPES as TIPOS, WEAPON_RARITIES as RARIDADES, WEAPON_SHOP, PROJECTILES, createProjectileGeometry } from "./game/weapons/WeaponCatalog.js";
+        import { createAmmoPickupMesh, createWeaponModel } from "./game/weapons/WeaponVisuals.js";
 
         const gameRuntime = new GameRuntime({
             initializeEngine: () => initEngine(),
@@ -201,7 +203,6 @@
         let machineGunGroup;
         let muzzleFlashLight;
         let isShooting = false;
-        let lastShootTime = 0;
 
         let enemies = [];
         let bullets = [];
@@ -211,38 +212,9 @@
         let levelObstacles = [];
 
         function createMachineGunModel() {
-            const gunGroup = new THREE.Group();
-
-            const bodyGeo = new THREE.BoxGeometry(0.18, 0.22, 0.75);
-            const bodyMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            gunGroup.add(body);
-
-            const barrelGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.65, 8);
-            const barrelMat = new THREE.MeshStandardMaterial({ color: 0x0d0d0d, metalness: 0.8, roughness: 0.2 });
-            const barrel = new THREE.Mesh(barrelGeo, barrelMat);
-            barrel.rotation.x = Math.PI / 2;
-            barrel.position.set(0, 0.05, -0.55);
-            gunGroup.add(barrel);
-
-            const magGeo = new THREE.BoxGeometry(0.12, 0.28, 0.18);
-            const magMat = new THREE.MeshLambertMaterial({ color: 0x991b1b });
-            const mag = new THREE.Mesh(magGeo, magMat);
-            mag.position.set(0, -0.16, -0.1);
-            gunGroup.add(mag);
-
-            const sightGeo = new THREE.BoxGeometry(0.04, 0.06, 0.08);
-            const sightMat = new THREE.MeshBasicMaterial({ color: 0xeab308 });
-            const sight = new THREE.Mesh(sightGeo, sightMat);
-            sight.position.set(0, 0.14, -0.3);
-            gunGroup.add(sight);
-
-            muzzleFlashLight = new THREE.PointLight(0xffb700, 0, 5);
-            muzzleFlashLight.position.set(0, 0.05, -0.9);
-            gunGroup.add(muzzleFlashLight);
-
-            gunGroup.position.set(0.28, -0.24, -0.5);
-            return gunGroup;
+            const weaponModel = createWeaponModel();
+            muzzleFlashLight = weaponModel.muzzleFlashLight;
+            return weaponModel.model;
         }
 
         function createZombieChickenMesh(type = "ancient") {
@@ -366,6 +338,33 @@
             camera.add(machineGunGroup);
 
             window.addEventListener('resize', onWindowResize);
+            gameRuntime.initializeWeapons({
+                state: gameState,
+                weapons: WEAPONS,
+                reload,
+                audio,
+                effects: {
+                    updateHUD,
+                    toast,
+                    hasShip,
+                    setWeaponPose: (y, rotation) => {
+                        machineGunGroup.position.y = THREE.MathUtils.lerp(machineGunGroup.position.y, y, 0.15);
+                        machineGunGroup.rotation.x = THREE.MathUtils.lerp(machineGunGroup.rotation.x, rotation, 0.15);
+                    },
+                    applyWeaponAppearance: weapon => {
+                        const body = machineGunGroup.children[0];
+                        const barrel = machineGunGroup.children[1];
+                        body.material.color.setHex(weapon.c);
+                        barrel.scale.set(weapon.b[0], weapon.b[1], weapon.b[2]);
+                    },
+                    playMuzzleFlash: () => {
+                        muzzleFlashLight.intensity = 3;
+                        setTimeout(() => { muzzleFlashLight.intensity = 0; }, 40);
+                        machineGunGroup.position.z = -0.3;
+                    },
+                    createBullet
+                }
+            });
             setupInputListeners();
             gameRuntime.initializeProgress({
                 storage: LS,
@@ -433,7 +432,6 @@
         // munição por arma: cada arma tem pente (mag) e reserva (res) próprios
         const AMMO_DROP_CHANCE = 0.25; // chance de uma galinha comum dropar munição
         const reload = { on: false, id: null, left: 0, total: 0 };
-        let lastEmptyClick = 0;
         let usedDouble = false, activeModal = null, invSel = 0, currentQuest = null, toastT = 0;
 
         const DIFFS = [
@@ -443,35 +441,6 @@
             { n: 'PESADELO', hp: 2.2, dmg: 2.2, spd: 1.3, fe: 2 }
         ];
 
-        const WEAPONS = {
-            pistol: { tipo: 'balistica', rar: 1, name: 'PISTOLA', icon: '🔫', interval: 320, mag: 12, res: 96, reload: 900, ac: 0xd4d4d8, dmg: 1.15, bul: 'pistol', c: 0x3f3f46, b: [0.9, 0.55, 0.9] },
-            mg: { tipo: 'balistica', rar: 2, name: 'METRALHADORA', icon: '🪖', interval: 170, mag: 30, res: 240, reload: 1300, ac: 0xfacc15, dmg: 1, bul: 'mg', c: 0x1a1a1a, b: [1, 1, 1] },
-            shotgun: { tipo: 'balistica', rar: 2, name: 'ESCOPETA', icon: '💥', interval: 650, mag: 6, res: 48, reload: 1900, ac: 0xfb923c, dmg: 0.7, n: 7, spread: 0.22, bul: 'shell', c: 0x7c4a1e, b: [2.2, 0.7, 2.2] },
-            lance: { tipo: 'antiga', rar: 2, name: 'LANÇA DO GUERREIRO', icon: '🔱', interval: 700, mag: 6, res: 36, reload: 1400, ac: 0xd97706, dmg: 3.2, bul: 'spear', c: 0x92400e, b: [0.6, 2.6, 0.6], ammoName: 'LANÇAS' },
-            alien: { tipo: 'alienigena', rar: 3, name: 'RIFLE ALIENÍGENA', icon: '🛸', interval: 300, mag: 14, res: 84, reload: 1500, ac: 0x4ade80, dmg: 1.9, bul: 'alien', c: 0x166534, b: [1.3, 1.3, 1.3], ammoName: 'CÉLULAS', secret: true },
-            rocket: { tipo: 'balistica', rar: 3, name: 'LANÇA-FOGUETES', icon: '🚀', interval: 800, mag: 4, res: 32, reload: 1800, ac: 0xef4444, dmg: 2.2, bul: 'rocket', c: 0x7f1d1d, b: [1.6, 1.6, 1.6], ammoName: 'FOGUETES' },
-            gren: { tipo: 'balistica', rar: 2, name: 'LANÇA-GRANADAS', icon: '💣', interval: 600, mag: 6, res: 36, reload: 1700, ac: 0x84cc16, dmg: 1.6, bul: 'grenade', c: 0x3f6212, b: [1.4, 1.1, 1.4], ammoName: 'GRANADAS' },
-            cannon: { tipo: 'experimental', rar: 3, name: 'CANHÃO DE FRANGO', icon: '🐔', interval: 1100, mag: 3, res: 18, reload: 2200, ac: 0xfde047, dmg: 4, bul: 'chicken', c: 0xca8a04, b: [3, 1, 3], ammoName: 'FRANGOS' },
-            sword: { tipo: 'temporal', rar: 4, name: 'ESPADA TEMPORAL', icon: '🗡️', interval: 260, mag: 40, res: 240, reload: 1200, ac: 0x818cf8, dmg: 1.1, n: 2, spread: 0.3, bul: 'slash', c: 0x4338ca, b: [0.5, 2.4, 0.5], ammoName: 'ENERGIA', secret: true },
-            eye: { tipo: 'cosmica', rar: 5, name: 'OLHO CÓSMICO', icon: '👁️', interval: 900, mag: 4, res: 28, reload: 2000, ac: 0xe879f9, dmg: 6.5, bul: 'eye', c: 0x701a75, b: [3.2, 0.8, 3.2], ammoName: 'ENERGIA' }
-        };
-
-        // ===== CLASSIFICAÇÃO DAS ARMAS =====
-        const TIPOS = {
-            balistica:   { icon: '🔫', n: 'Balística',    d: 'Armas de fogo convencionais' },
-            antiga:      { icon: '⚔️', n: 'Antiga',       d: 'Armas de outras eras' },
-            alienigena:  { icon: '👽', n: 'Alienígena',   d: 'Tecnologia extraterrestre' },
-            experimental:{ icon: '☢️', n: 'Experimental', d: 'Criadas por experimentos científicos' },
-            temporal:    { icon: '🌀', n: 'Temporal',     d: 'Ligadas à viagem no tempo' },
-            cosmica:     { icon: '👁️', n: 'Cósmica',      d: 'Poder de criaturas/dimensões cósmicas' }
-        };
-        const RARIDADES = [null,
-            { r: 'I',   n: 'Sucata',      d: 'Improvisada e fraca',                      c: '#9ca3af' },
-            { r: 'II',  n: 'Militar',     d: 'Convencional e confiável',                 c: '#4ade80' },
-            { r: 'III', n: 'Avançada',    d: 'Tecnologia experimental ou muito poderosa', c: '#38bdf8' },
-            { r: 'IV',  n: 'Anômala',     d: 'Quebra as regras normais do mundo',        c: '#c084fc' },
-            { r: 'V',   n: 'Apocalíptica',d: 'Feita para destruir o universo',           c: '#f87171' }
-        ];
         function wTag(id) {
             const w = WEAPONS[id], t = TIPOS[w.tipo], r = RARIDADES[w.rar];
             return `<span class="block text-xs font-bold leading-tight" style="color:${r.c}">${t.icon} ${t.n} · ${r.r} ${r.n}</span>`;
@@ -479,13 +448,7 @@
         function wTagTxt(id) { const w = WEAPONS[id]; return TIPOS[w.tipo].icon + ' ' + RARIDADES[w.rar].r; }
 
         const SHOP = [
-            { id: 'mg', type: 'weapon', icon: '🪖', name: 'Metralhadora', desc: 'Rajadas rápidas e confiáveis de projéteis convencionais.', cost: 50 },
-            { id: 'shotgun', type: 'weapon', icon: '💥', name: 'Escopeta', desc: '7 projéteis em leque. Devastadora de perto.', cost: 80 },
-            { id: 'lance', type: 'weapon', icon: '🔱', name: 'Lança do Guerreiro', desc: 'Lança de outra era, arremessada com força: atravessa vários inimigos.', cost: 120 },
-            { id: 'cannon', type: 'weapon', icon: '🐔', name: 'Canhão de Frango', desc: 'Experimento científico que dispara frangos explosivos em área.', cost: 200 },
-            { id: 'gren', type: 'weapon', icon: '💣', name: 'Lança-Granadas', desc: 'Granadas que quicam e explodem rápido. A explosão também te lança (Recoil Jump).', cost: 150 },
-            { id: 'rocket', type: 'weapon', icon: '🚀', name: 'Lança-Foguetes', desc: 'Foguete explosivo em área. Atire no chão aos seus pés para dar um rocket jump (Recoil Jump).', cost: 220 },
-            { id: 'eye', type: 'weapon', icon: '👁️', name: 'Olho Cósmico', desc: 'Olhar de uma criatura cósmica: raio perfurante de altíssimo dano.', cost: 300 },
+            ...WEAPON_SHOP,
             { id: 'vida', type: 'ship', icon: '❤️', name: 'Ship da Vida', desc: '+50 de vida máxima.', cost: 60 },
             { id: 'escudo', type: 'ship', icon: '🛡️', name: 'Ship Guardião', desc: '-25% de todo o dano recebido.', cost: 70 },
             { id: 'vento', type: 'ship', icon: '🌪️', name: 'Ship do Vento', desc: '+25% de velocidade de movimento.', cost: 50 },
@@ -1244,65 +1207,16 @@
         }
 
         // ===== MUNIÇÃO POR ARMA =====
-        function ammoCap(id) { return Math.round(WEAPONS[id].res * (1 + (gameState.upgrades.ammoLvl - 1) * 0.25)); }
-        function ammoOf(id) {
-            const st = gameState.ammoStore;
-            if (!st[id]) st[id] = { mag: WEAPONS[id].mag, res: ammoCap(id) };
-            return st[id];
-        }
-        function refillAllAmmo() {
-            reload.on = false;
-            gameState.ammoStore = {};
-            Object.keys(WEAPONS).forEach(id => { if (gameState.weapons[id]) ammoOf(id); });
-        }
-        function updateAmmoHUD() {
-            const el = document.getElementById('hud-ammo'), lb = document.getElementById('hud-ammo-label');
-            if (!el || !lb) return;
-            const st = ammoOf(gameState.currentWeapon), an = WEAPONS[gameState.currentWeapon].ammoName || 'MUNIÇÃO';
-            if (reload.on) lb.innerText = 'RECARGA ' + Math.round(100 * (1 - reload.left / reload.total)) + '%';
-            else lb.innerText = st.mag === 0 ? (st.res > 0 ? '[R] RECARREGAR' : 'SEM ' + an) : an;
-            el.innerHTML = st.mag + '<span class="text-sm text-yellow-200"> / ' + st.res + '</span>';
-            el.style.color = st.mag === 0 ? '#ef4444' : '';
-        }
-        function startReload() {
-            if (gameState.inHub || reload.on || gameState.isDead || gameState.isPaused) return;
-            const id = gameState.currentWeapon, st = ammoOf(id), w = WEAPONS[id];
-            if (st.mag >= w.mag || st.res <= 0) return;
-            reload.on = true; reload.id = id; reload.total = reload.left = w.reload;
-            audio.playReload(0);
-            updateAmmoHUD();
-        }
-        function updateReload(delta) {
-            let ty = -0.24, rx = 0;
-            if (reload.on) {
-                reload.left -= delta * 1000;
-                ty = -0.52; rx = -0.75; // arma abaixa e inclina durante a recarga
-                if (reload.left <= 0) {
-                    const st = ammoOf(reload.id), w = WEAPONS[reload.id];
-                    const take = Math.min(w.mag - st.mag, st.res);
-                    st.mag += take; st.res -= take;
-                    reload.on = false;
-                    audio.playReload(1);
-                    updateHUD();
-                } else updateAmmoHUD();
-            }
-            machineGunGroup.position.y = THREE.MathUtils.lerp(machineGunGroup.position.y, ty, 0.15);
-            machineGunGroup.rotation.x = THREE.MathUtils.lerp(machineGunGroup.rotation.x, rx, 0.15);
-        }
-        function makeIconSprite(icon) {
-            const c = document.createElement('canvas'); c.width = 128; c.height = 128;
-            const x = c.getContext('2d'); x.textAlign = 'center'; x.textBaseline = 'middle';
-            x.font = '84px sans-serif'; x.fillText(icon, 64, 70);
-            const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, fog: false }));
-            spr.scale.set(1.1, 1.1, 1);
-            return spr;
-        }
+        function ammoCap(id) { return gameRuntime.weaponSystem.ammoCap(id); }
+        function ammoOf(id) { return gameRuntime.weaponSystem.ammoOf(id); }
+        function refillAllAmmo() { gameRuntime.weaponSystem.refillAllAmmo(); }
+        function updateAmmoHUD() { gameRuntime.weaponSystem.updateAmmoHUD(); }
+        function startReload() { gameRuntime.weaponSystem.startReload(); }
+        function updateReload(delta) { gameRuntime.weaponSystem.updateReload(delta); }
         function makeAmmoMesh(id) {
-            const w = WEAPONS[id], g = new THREE.Group();
-            g.add(new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 0.45), new THREE.MeshStandardMaterial({ color: 0x3f3f46, metalness: 0.4, roughness: 0.6 })));
-            g.add(new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.14, 0.49), new THREE.MeshStandardMaterial({ color: w.ac, emissive: w.ac, emissiveIntensity: 0.9 })));
-            const spr = makeIconSprite(w.icon); spr.position.y = 0.95; g.add(spr);
-            return g;
+            const weapon = WEAPONS[id];
+            if (!weapon) throw new RangeError(`Arma desconhecida: ${id}`);
+            return createAmmoPickupMesh(weapon);
         }
         // drop aleatório: tipo de munição sorteado entre as armas que o jogador possui
         function maybeDropAmmo(enemy) {
@@ -1338,22 +1252,10 @@
         }
 
         function equipWeapon(id) {
-            if (!gameState.weapons[id]) return;
-            if (gameState.currentWeapon !== id) reload.on = false; // trocar de arma cancela a recarga
-            gameState.currentWeapon = id;
-            const w = WEAPONS[id], body = machineGunGroup.children[0], barrel = machineGunGroup.children[1];
-            body.material.color.setHex(w.c);
-            barrel.scale.set(w.b[0], w.b[1], w.b[2]);
-            updateHUD();
+            gameRuntime.weaponSystem.equipWeapon(id);
         }
-        function equipSlot(n) { const id = gameState.hotbar[n]; if (id) equipWeapon(id); }
-        function giveWeapon(id) {
-            gameState.weapons[id] = true;
-            ammoOf(id); // arma nova já vem carregada
-            if (!gameState.wLvl[id]) gameState.wLvl[id] = 1;
-            const sl = gameState.hotbar.indexOf(null);
-            if (sl >= 0) gameState.hotbar[sl] = id;
-        }
+        function equipSlot(n) { gameRuntime.weaponSystem.equipSlot(n); }
+        function giveWeapon(id) { gameRuntime.weaponSystem.giveWeapon(id); }
 
         // ===== MODAIS =====
         function openModal(id) {
@@ -1731,50 +1633,13 @@
         }
 
         function shootWeapon() {
-            if (gameState.inHub) return;
-            const id = gameState.currentWeapon, w = WEAPONS[id], now = performance.now();
-            const fireInterval = w.interval / (1 + (gameState.upgrades.fireRateLvl - 1) * 0.4);
-            if (reload.on || now - lastShootTime < fireInterval) return;
-            const st = ammoOf(id);
-            if (st.mag <= 0) {
-                if (st.res > 0) startReload();
-                else if (now - lastEmptyClick > 1200) {
-                    lastEmptyClick = now; audio.playEmpty();
-                    toast('❌ Sem munição de ' + w.name + ' — pegue drops ou troque de arma');
-                }
-                return;
-            }
-
-            lastShootTime = now;
-            st.mag -= 1;
-            updateHUD();
-            audio.playShoot();
-
-            muzzleFlashLight.intensity = 3.0;
-            setTimeout(() => { muzzleFlashLight.intensity = 0; }, 40);
-            machineGunGroup.position.z = -0.3;
-
-            const dmg = 18 * w.dmg * (1 + (gameState.upgrades.damageLvl - 1) * 0.5) * (hasShip('furia') ? 1.3 : 1) * (1 + gameState.perm.dmg) * (1 + 0.25 * ((gameState.wLvl[id] || 1) - 1));
-            if ((id === 'mg' || id === 'pistol') && gameState.upgrades.hasPlasma) { [-0.08, 0, 0.08].forEach(a => createBullet(a, dmg, 'plasma')); return; }
-            const n = w.n || 1, sp = w.spread || 0;
-            for (let i = 0; i < n; i++) createBullet((Math.random() - 0.5) * sp, dmg, w.bul, (Math.random() - 0.5) * sp * 0.5);
+            gameRuntime.weaponSystem.shoot();
         }
 
         function createBullet(yawOff, damage, kind, pitchOff = 0) {
-            const cfg = {
-                mg: { geo: new THREE.CylinderGeometry(0.04, 0.04, 0.6, 4), color: 0xfacc15, speed: 2.0, life: 70, orient: true },
-                plasma: { geo: new THREE.SphereGeometry(0.22, 8, 8), color: 0xc084fc, speed: 1.4, life: 70 },
-                shell: { geo: new THREE.SphereGeometry(0.1, 6, 6), color: 0xfb923c, speed: 1.6, life: 30 },
-                pistol: { geo: new THREE.CylinderGeometry(0.035, 0.035, 0.45, 4), color: 0xe5e7eb, speed: 2.2, life: 70, orient: true },
-                spear: { geo: new THREE.CylinderGeometry(0.06, 0.06, 3.2, 6), color: 0xd97706, speed: 2.4, life: 55, orient: true, pierce: true },
-                alien: { geo: new THREE.OctahedronGeometry(0.28), color: 0x4ade80, speed: 2.3, life: 60, pierce: true },
-                chicken: { geo: new THREE.SphereGeometry(0.5, 10, 10), color: 0xfde047, speed: 1.0, life: 60, splash: true, radius: 7, blastR: 6.5, blastF: 27, selfDmg: 8 },
-                rocket: { geo: new THREE.CylinderGeometry(0.12, 0.12, 0.9, 6), color: 0xef4444, speed: 1.3, life: 80, orient: true, splash: true, radius: 5.5, blastR: 5.5, blastF: 30, selfDmg: 10 },
-                grenade: { geo: new THREE.SphereGeometry(0.22, 8, 8), color: 0x84cc16, speed: 0.8, life: 34, splash: true, grav: 0.012, bounce: true, radius: 5, blastR: 5, blastF: 25, selfDmg: 8 },
-                slash: { geo: new THREE.BoxGeometry(2.4, 0.12, 0.35), color: 0x818cf8, speed: 1.5, life: 13, pierce: true, face: true },
-                eye: { geo: new THREE.SphereGeometry(0.45, 10, 10), color: 0xe879f9, speed: 2.6, life: 65, pierce: true }
-            }[kind];
-            const mesh = new THREE.Mesh(cfg.geo, new THREE.MeshBasicMaterial({ color: cfg.color }));
+            const cfg = PROJECTILES[kind];
+            if (!cfg) throw new RangeError(`Tipo de projétil desconhecido: ${kind}`);
+            const mesh = new THREE.Mesh(createProjectileGeometry(cfg), new THREE.MeshBasicMaterial({ color: cfg.color }));
             const dir = new THREE.Vector3();
             camera.getWorldDirection(dir);
             dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), yawOff);
@@ -1785,7 +1650,7 @@
             if (cfg.orient) mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
             if (cfg.face) mesh.rotation.y = Math.atan2(dir.x, dir.z);
             scene.add(mesh);
-            bullets.push({ mesh, dir, speed: cfg.speed, life: cfg.life, damage, pierce: !!cfg.pierce, splash: !!cfg.splash, radius: cfg.radius || 7, blastR: cfg.blastR || 0, blastF: cfg.blastF || 0, selfDmg: cfg.selfDmg || 0, grav: cfg.grav || 0, bounce: !!cfg.bounce, hit: new Set() });
+            bullets.push({ mesh, dir, speed: cfg.speed, life: cfg.life, damage, pierce: !!cfg.pierce, splash: !!cfg.splash, radius: cfg.splashRadius || 7, blastR: cfg.blastRadius || 0, blastF: cfg.blastForce || 0, selfDmg: cfg.selfDamage || 0, grav: cfg.gravity || 0, bounce: !!cfg.bounce, hit: new Set() });
         }
 
         function fireBossProjectile(fromPos, targetPos) {
