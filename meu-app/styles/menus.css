@@ -1,0 +1,331 @@
+:root {
+    --menu-cyan: #79eaff;
+    --menu-cyan-dim: rgba(69, 197, 224, 0.48);
+    --menu-glass: rgba(5, 12, 20, 0.94);
+    --menu-line: rgba(125, 230, 248, 0.42);
+}
+
+#start-screen,
+#pause-screen,
+#victory-screen,
+#game-message-screen,
+#upgrade-modal,
+#npc-modal,
+#inv-modal,
+#shop-modal,
+#pz-modal {
+    background:
+        radial-gradient(ellipse at 50% 45%, rgba(20, 88, 108, 0.2), transparent 58%),
+        rgba(2, 7, 13, 0.76) !important;
+    backdrop-filter: blur(2px);
+}
+
+#start-screen > div,
+#pause-screen > div,
+#victory-screen > div,
+#game-message-screen > div,
+#upgrade-modal > div,
+#npc-modal > div,
+#inv-modal > div,
+#shop-modal > div,
+#pz-modal > div {
+    position: relative;
+    isolation: isolate;
+    color: #e4f7ff;
+    background:
+        linear-gradient(135deg, rgba(26, 49, 65, 0.44), transparent 34%),
+        linear-gradient(315deg, rgba(12, 45, 58, 0.38), transparent 40%),
+        var(--menu-glass) !important;
+    border: 1px solid var(--menu-line) !important;
+    border-top: 2px solid var(--menu-cyan) !important;
+    border-radius: 2px !important;
+    box-shadow:
+        0 0 0 1px rgba(2, 8, 15, 0.9),
+        0 16px 70px rgba(0, 0, 0, 0.65),
+        inset 0 0 28px rgba(38, 154, 181, 0.08),
+        0 0 22px rgba(53, 206, 235, 0.1) !important;
+}
+
+#start-screen > div::before,
+#pause-screen > div::before,
+#victory-screen > div::before,
+#game-message-screen > div::before,
+#upgrade-modal > div::before,
+#npc-modal > div::before,
+#inv-modal > div::before,
+#shop-modal > div::before,
+#pz-modal > div::before {
+    content: "CHICKEN DOOM  /  TEMPORAL COMMAND";
+    display: block;
+    margin: -0.35rem 0 1.1rem;
+    padding-bottom: 0.65rem;
+    color: #88d9e9;
+    border-bottom: 1px solid rgba(125, 230, 248, 0.24);
+    font: 700 0.62rem/1.4 Arial, sans-serif;
+    letter-spacing: 0.18em;
+    text-align: left;
+}
+
+#start-screen > div {
+    width: min(860px, calc(100vw - 32px));
+    max-width: 860px !important;
+    max-height: 92vh !important;
+    padding: clamp(1.1rem, 3vw, 2.4rem) !important;
+    text-align: left;
+    scrollbar-color: #337f91 #08121b;
+}
+
+#start-screen h1 {
+    color: #edfbff !important;
+    font: 300 clamp(2rem, 7vw, 4.5rem)/1.1 Arial, sans-serif !important;
+    letter-spacing: clamp(0.14em, 1.7vw, 0.32em);
+    text-shadow: 0 0 8px rgba(110, 229, 255, 0.78), 0 0 32px rgba(38, 168, 211, 0.52);
+    text-align: center;
+    animation: none !important;
+}
+
+#start-screen > div > p:nth-of-type(1) {
+    margin-top: 0.7rem;
+    color: #8ccbd8 !important;
+    font: 600 clamp(0.7rem, 2vw, 0.9rem)/1.6 Arial, sans-serif;
+    letter-spacing: 0.19em;
+    text-align: center;
+}
+
+#start-screen > div > div {
+    font-family: Arial, sans-serif;
+}
+
+#start-screen > div > div:nth-last-child(2),
+#start-screen > div > div:last-child {
+    padding-top: 0.85rem;
+    border-top: 1px solid rgba(125, 230, 248, 0.22);
+}
+
+#start-screen #diff-buttons button,
+#start-screen #run-slots > div {
+    border-color: rgba(125, 230, 248, 0.36) !important;
+    border-radius: 1px !important;
+    background: rgba(6, 17, 27, 0.88) !important;
+}
+
+#start-screen #diff-buttons button {
+    color: #c4dae3 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+#start-screen #diff-buttons button.bg-red-700 {
+    color: #f2fdff !important;
+    border-color: #f4dc77 !important;
+    box-shadow: inset 0 0 18px rgba(93, 217, 239, 0.14), 0 0 10px rgba(125, 230, 248, 0.2);
+}
+
+#start-screen #run-slots > div {
+    align-items: center;
+    padding: 0.85rem !important;
+}
+
+#pause-screen > div,
+#victory-screen > div,
+#game-message-screen > div,
+#upgrade-modal > div,
+#npc-modal > div,
+#inv-modal > div,
+#shop-modal > div,
+#pz-modal > div {
+    max-height: min(92vh, 900px);
+    overflow-y: auto;
+    scrollbar-color: #337f91 #08121b;
+}
+
+#pause-screen > div {
+    width: min(640px, calc(100vw - 32px));
+    max-width: 640px !important;
+    padding: clamp(1.1rem, 3vw, 2rem) !important;
+}
+
+#pause-screen > div > div:last-child {
+    max-height: 32vh;
+    overflow-y: auto;
+}
+
+#victory-screen > div,
+#game-message-screen > div {
+    width: min(720px, calc(100vw - 32px));
+    max-width: 720px !important;
+    padding: clamp(1.2rem, 4vw, 2.6rem) !important;
+}
+
+#upgrade-modal > div,
+#npc-modal > div,
+#inv-modal > div,
+#shop-modal > div {
+    max-width: min(920px, calc(100vw - 32px)) !important;
+    width: 100%;
+    padding: clamp(1rem, 3vw, 2rem) !important;
+}
+
+#start-screen h2,
+#pause-screen h2,
+#victory-screen h2,
+#victory-screen h1,
+#game-message-screen h2,
+#upgrade-modal h2,
+#npc-modal h2,
+#inv-modal h2,
+#shop-modal h2 {
+    color: #aeefff !important;
+    font-family: Arial, sans-serif !important;
+    font-size: clamp(1rem, 3vw, 1.55rem) !important;
+    letter-spacing: 0.11em;
+    line-height: 1.4;
+    text-shadow: 0 0 12px rgba(77, 206, 235, 0.28);
+    animation: none !important;
+}
+
+#start-screen button,
+#pause-screen button,
+#victory-screen button,
+#game-message-screen button,
+#upgrade-modal button,
+#npc-modal button,
+#inv-modal button,
+#shop-modal button,
+#pz-modal button {
+    min-height: 2.6rem;
+    color: #e0f6ff !important;
+    background: linear-gradient(180deg, rgba(27, 62, 79, 0.92), rgba(8, 23, 35, 0.96)) !important;
+    border: 1px solid rgba(126, 224, 243, 0.64) !important;
+    border-radius: 1px !important;
+    box-shadow: inset 0 0 12px rgba(78, 199, 224, 0.08);
+    font-family: Arial, sans-serif;
+    font-size: clamp(0.72rem, 2vw, 0.9rem) !important;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+#start-screen button:hover,
+#pause-screen button:hover,
+#victory-screen button:hover,
+#game-message-screen button:hover,
+#upgrade-modal button:hover,
+#npc-modal button:hover,
+#inv-modal button:hover,
+#shop-modal button:hover,
+#pz-modal button:hover {
+    background: linear-gradient(180deg, rgba(44, 112, 132, 0.96), rgba(11, 37, 52, 0.98)) !important;
+    border-color: #dcfbff !important;
+    box-shadow: 0 0 16px rgba(89, 220, 244, 0.28), inset 0 0 14px rgba(89, 220, 244, 0.14);
+}
+
+#start-screen button:focus-visible,
+#pause-screen button:focus-visible,
+#victory-screen button:focus-visible,
+#game-message-screen button:focus-visible,
+#upgrade-modal button:focus-visible,
+#npc-modal button:focus-visible,
+#inv-modal button:focus-visible,
+#shop-modal button:focus-visible,
+#pz-modal button:focus-visible {
+    outline: 2px solid #f4dc77;
+    outline-offset: 2px;
+}
+
+#start-screen button:disabled,
+#pause-screen button:disabled,
+#victory-screen button:disabled,
+#game-message-screen button:disabled,
+#upgrade-modal button:disabled,
+#npc-modal button:disabled,
+#inv-modal button:disabled,
+#shop-modal button:disabled,
+#pz-modal button:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+}
+
+#start-screen .text-amber-400,
+#start-screen .text-yellow-400,
+#pause-screen .text-amber-400,
+#upgrade-modal .text-amber-400,
+#shop-modal .text-amber-400 {
+    color: #9de8f4 !important;
+}
+
+#upgrade-modal [class*="bg-black/60"],
+#shop-modal [class*="bg-black/60"],
+#pause-screen [class*="bg-black/70"],
+#victory-screen [class*="bg-black/80"],
+#start-screen [class*="bg-black/70"] {
+    background: rgba(3, 13, 22, 0.78) !important;
+    border-color: rgba(119, 208, 226, 0.28) !important;
+    border-radius: 1px !important;
+}
+
+#volume-slider {
+    accent-color: #79eaff;
+}
+
+#hub-hint,
+#toast {
+    border-radius: 1px !important;
+    border-color: rgba(121, 234, 255, 0.66) !important;
+    background: rgba(4, 15, 24, 0.94) !important;
+    color: #d5f7ff !important;
+}
+
+@media (max-width: 640px) {
+    #start-screen,
+    #pause-screen,
+    #victory-screen,
+    #game-message-screen {
+        padding: 0.75rem !important;
+    }
+
+    #start-screen > div,
+    #pause-screen > div,
+    #victory-screen > div,
+    #game-message-screen > div {
+        width: calc(100vw - 24px);
+        max-height: 94vh !important;
+        gap: 1rem;
+    }
+
+    #start-screen > div::before,
+    #pause-screen > div::before,
+    #victory-screen > div::before,
+    #game-message-screen > div::before {
+        letter-spacing: 0.1em;
+    }
+
+    #start-screen #run-slots > div {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    #start-screen #run-slots > div > div:last-child {
+        display: flex;
+        width: 100%;
+        flex-direction: row;
+    }
+
+    #pause-screen > div > div:last-child {
+        max-height: 24vh;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #start-screen button,
+    #pause-screen button,
+    #victory-screen button,
+    #game-message-screen button,
+    #upgrade-modal button,
+    #npc-modal button,
+    #inv-modal button,
+    #shop-modal button,
+    #pz-modal button {
+        transition: none;
+    }
+}

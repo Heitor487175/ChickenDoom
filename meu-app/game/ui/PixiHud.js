@@ -5,6 +5,7 @@ export class PixiHud {
     #state = null;
     #elements = null;
     #hudElement = null;
+    #menuVisible = false;
 
     async initialize(container) {
         await this.#application.init({
@@ -23,12 +24,14 @@ export class PixiHud {
         this.#hudElement = document.getElementById("hud");
 
         const stage = this.#application.stage;
+        const menuBackground = new Graphics();
         const top = this.#createPanel();
         const left = this.#createPanel();
         const right = this.#createPanel();
-        stage.addChild(top.container, left.container, right.container);
+        stage.addChild(menuBackground, top.container, left.container, right.container);
 
         this.#elements = {
+            menuBackground,
             top,
             left,
             right,
@@ -45,7 +48,10 @@ export class PixiHud {
 
         this.#application.ticker.add(() => this.#updateVisibility());
         this.#application.ticker.add(() => this.#pulseLowHealth());
-        window.addEventListener("resize", () => this.#render());
+        window.addEventListener("resize", () => {
+            this.#render();
+            this.#renderMenuBackground();
+        });
         this.#render();
     }
 
@@ -76,10 +82,23 @@ export class PixiHud {
     #setPanel(graphics, x, y, width, height, accent) {
         graphics.clear();
         graphics
-            .roundRect(x, y, width, height, 12)
-            .fill({ color: 0x080d15, alpha: 0.86 })
-            .roundRect(x, y, width, height, 12)
-            .stroke({ color: accent, alpha: 0.78, width: 1.5 });
+            .moveTo(x + 9, y)
+            .lineTo(x + width - 9, y)
+            .lineTo(x + width, y + 9)
+            .lineTo(x + width, y + height - 9)
+            .lineTo(x + width - 9, y + height)
+            .lineTo(x + 9, y + height)
+            .lineTo(x, y + height - 9)
+            .lineTo(x, y + 9)
+            .closePath()
+            .fill({ color: 0x07111e, alpha: 0.68 })
+            .stroke({ color: accent, alpha: 0.82, width: 1.5 });
+        graphics
+            .moveTo(x + 12, y + 2)
+            .lineTo(x + 54, y + 2)
+            .moveTo(x + width - 54, y + height - 2)
+            .lineTo(x + width - 12, y + height - 2)
+            .stroke({ color: 0x8cf2ff, alpha: 0.55, width: 1 });
     }
 
     #setText(text, value, x, y, fontSize, color = 0xffffff, bold = false) {
@@ -178,9 +197,78 @@ export class PixiHud {
     }
 
     #updateVisibility() {
-        if (this.#hudElement) {
-            this.#application.canvas.style.display = this.#hudElement.classList.contains("hidden") ? "none" : "block";
+        const menuVisible = [
+            "start-screen",
+            "pause-screen",
+            "victory-screen",
+            "game-message-screen",
+            "upgrade-modal",
+            "npc-modal",
+            "inv-modal",
+            "shop-modal",
+            "pz-modal"
+        ].some(id => {
+            const element = document.getElementById(id);
+            return element && !element.classList.contains("hidden");
+        });
+        const hudVisible = this.#hudElement && !this.#hudElement.classList.contains("hidden");
+
+        this.#application.canvas.style.display = hudVisible || menuVisible ? "block" : "none";
+        if (this.#menuVisible !== menuVisible) {
+            this.#menuVisible = menuVisible;
+            this.#renderMenuBackground();
         }
+    }
+
+    #renderMenuBackground() {
+        if (!this.#elements) return;
+        const graphics = this.#elements.menuBackground;
+        graphics.clear();
+        if (!this.#menuVisible) return;
+
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const inset = Math.max(24, width * 0.035);
+        const lineColor = 0x34d5e8;
+
+        graphics
+            .rect(inset, inset, width - inset * 2, height - inset * 2)
+            .stroke({ color: lineColor, alpha: 0.22, width: 1 });
+
+        for (let index = 0; index < 6; index++) {
+            const y = centerY - 150 + index * 60;
+            const direction = index % 2 === 0 ? 1 : -1;
+            const startX = direction > 0 ? inset : width - inset;
+            const endX = direction > 0 ? centerX - 190 : centerX + 190;
+            const bendX = startX + (endX - startX) * 0.55;
+            const bendY = y + (index % 3 - 1) * 18;
+
+            graphics
+                .moveTo(startX, y)
+                .lineTo(bendX, y)
+                .lineTo(bendX + 12 * direction, bendY)
+                .lineTo(endX, bendY)
+                .stroke({ color: lineColor, alpha: 0.24, width: 1 });
+            graphics.circle(bendX, y, 2).fill({ color: lineColor, alpha: 0.42 });
+        }
+
+        const logoY = Math.max(inset + 28, centerY - 205);
+        graphics
+            .moveTo(centerX - 92, logoY)
+            .lineTo(centerX - 44, logoY)
+            .lineTo(centerX - 29, logoY + 12)
+            .lineTo(centerX + 29, logoY + 12)
+            .lineTo(centerX + 44, logoY)
+            .lineTo(centerX + 92, logoY)
+            .stroke({ color: 0x7cecff, alpha: 0.68, width: 2 });
+        graphics
+            .moveTo(centerX - 11, logoY - 8)
+            .lineTo(centerX + 11, logoY - 8)
+            .lineTo(centerX, logoY + 14)
+            .closePath()
+            .fill({ color: 0x8cf2ff, alpha: 0.82 });
     }
 
     #pulseLowHealth() {
