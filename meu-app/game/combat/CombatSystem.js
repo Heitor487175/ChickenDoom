@@ -27,6 +27,7 @@ export class CombatSystem {
         this.state.killsInEpoch++;
         this.state.totalKills++;
         this.state.stats.kills++;
+        this.effects.syncHUD();
         if (this.effects.hasShip("vampiro")) {
             this.state.health = Math.min(this.state.maxHealth, this.state.health + 2);
             this.effects.updateHUD();

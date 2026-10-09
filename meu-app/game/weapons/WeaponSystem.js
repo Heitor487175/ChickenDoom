@@ -53,6 +53,7 @@ export class WeaponSystem {
         }
         ammoElement.innerHTML = ammo.mag + '<span class="text-sm text-yellow-200"> / ' + ammo.res + "</span>";
         ammoElement.style.color = ammo.mag === 0 ? "#ef4444" : "";
+        this.#effects.syncHUD();
     }
 
     startReload() {

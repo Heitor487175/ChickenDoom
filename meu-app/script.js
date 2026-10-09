@@ -2,9 +2,11 @@
         import { GameRuntime } from "./game/GameRuntime.js";
         import { EPOCHS, HUB_COLORS } from "./game/maps/MapCatalog.js";
         import { MapManager } from "./game/maps/MapManager.js";
+        import { PixiHud } from "./game/ui/PixiHud.js";
         import { WEAPONS, WEAPON_TYPES as TIPOS, WEAPON_RARITIES as RARIDADES, WEAPON_SHOP, PROJECTILES, createProjectileGeometry } from "./game/weapons/WeaponCatalog.js";
         import { createAmmoPickupMesh, createWeaponModel } from "./game/weapons/WeaponVisuals.js";
 
+        const pixiHud = new PixiHud();
         const gameRuntime = new GameRuntime({
             initializeEngine: () => initEngine(),
             animate: () => animate()
@@ -145,7 +147,7 @@
         }
         // CHICKEN SHIFT (F): alterna Presente/Passado. Objetos do cenário existem só em um dos tempos
         // (CS.objs), e os inimigos próximos ficam congelados por alguns segundos.
-        const CS = { past: false, cdT: 0, objs: [], dur: 10000, until: 0, hud: null };
+        const CS = { past: false, cdT: 0, objs: [], dur: 10000, until: 0 };
         function hasChickenShift() { return !!(gameState.perm.chickenShift || (gameState.quests && gameState.quests.q13 === 2)); }
         CS.apply = function () {
             CS.objs.forEach(o => {
@@ -158,13 +160,8 @@
             nav.ver++;
             try { renderer.domElement.style.filter = CS.past ? 'sepia(.75) saturate(1.3) hue-rotate(-12deg)' : ''; } catch (e) {}
         };
-        CS.setHud = function (txt) {
-            if (!CS.hud) {
-                const el = document.createElement('div');
-                el.style.cssText = 'position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:20;pointer-events:none;font-size:22px;font-weight:bold;color:#e9d5ff;text-shadow:2px 2px 0 #000;background:rgba(76,29,149,.55);padding:2px 14px;border:2px solid #a78bfa;display:none';
-                document.body.appendChild(el); CS.hud = el;
-            }
-            CS.hud.style.display = txt ? 'block' : 'none'; if (txt) CS.hud.textContent = txt;
+        CS.setHud = function () {
+            updatePixiHUD();
         };
         CS.reset = function () { CS.past = false; CS.objs.length = 0; CS.cdT = 0; CS.until = 0; CS.setHud(''); try { renderer.domElement.style.filter = ''; } catch (e) {} };
         // tempo no passado: depois de CS.dur o jogador volta ao presente (o relógio pausa com o jogo)
@@ -362,7 +359,8 @@
                         setTimeout(() => { muzzleFlashLight.intensity = 0; }, 40);
                         machineGunGroup.position.z = -0.3;
                     },
-                    createBullet
+                    createBullet,
+                    syncHUD: updatePixiHUD
                 }
             });
             setupInputListeners();
@@ -398,6 +396,7 @@
                     hasShip,
                     updateHUD,
                     checkGates,
+                    syncHUD: updatePixiHUD,
                     handleBossDefeated: enemy => {
                         document.getElementById('boss-hud').classList.add('hidden');
                         const epoch = EPOCHS[gameState.currentEpochIndex];
@@ -1810,12 +1809,79 @@
             document.getElementById('hud-feathers').innerText = gameState.feathers;
             document.getElementById('hud-epoch').innerText = gameState.inHub ? '🏛️ HUB TEMPORAL' : EPOCHS[gameState.currentEpochIndex].name;
             document.getElementById('hud-hint').innerText = `${WEAPONS[gameState.currentWeapon].icon} ${WEAPONS[gameState.currentWeapon].name} [${wTagTxt(gameState.currentWeapon)}] Lv${gameState.wLvl[gameState.currentWeapon] || 1} | [1-4] Armas | [R] Recarregar | [E] Interagir | [I] Inventário | [H] 🍗${gameState.heals}`;
+            updatePixiHUD();
+        }
+
+        function updatePixiHUD() {
+            const epoch = EPOCHS[gameState.currentEpochIndex];
+            const weapon = WEAPONS[gameState.currentWeapon];
+            const ammo = gameRuntime.weaponSystem.ammoOf(gameState.currentWeapon);
+            const activeBoss = !gameState.inHub && gameState.bossSpawned && gameState.bossEntity;
+            const target = activeBoss ? gameState.bossEntity.maxHp : epoch.enemiesToKill;
+            const progressValue = activeBoss
+                ? Math.max(0, target - gameState.bossEntity.hp)
+                : Math.min(gameState.killsInEpoch, target);
+            const upgradeCosts = [
+                gameState.upgrades.fireRateLvl * 20,
+                gameState.upgrades.damageLvl * 25,
+                gameState.upgrades.ammoLvl * 15,
+                gameState.upgrades.hasPlasma ? Infinity : 50
+            ];
+            const completedEras = gameState.completed.filter(Boolean).length;
+            const isExtraEra = gameState.currentEpochIndex >= 8;
+
+            pixiHud.update({
+                health: Math.max(0, Math.floor(gameState.health)),
+                maxHealth: gameState.maxHealth,
+                healthRatio: gameState.health / gameState.maxHealth,
+                shield: Math.max(0, Math.floor(gameState.shield)),
+                shieldRatio: gameState.shield / 100,
+                weaponName: weapon.name,
+                weaponLevel: gameState.wLvl[gameState.currentWeapon] || 1,
+                ammoLabel: document.getElementById('hud-ammo-label').innerText,
+                magazine: ammo.mag,
+                reserve: ammo.res,
+                feathers: gameState.feathers,
+                upgradesAvailable: gameState.feathers >= Math.min(...upgradeCosts),
+                epochLabel: gameState.inHub ? 'HUB TEMPORAL' : epoch.name,
+                phaseLabel: gameState.inHub
+                    ? `${completedEras} / 8 ERAS`
+                    : isExtraEra
+                        ? `ERA EXTRA ${gameState.currentEpochIndex - 7}`
+                        : `ERA ${gameState.currentEpochIndex + 1} / 8`,
+                objective: gameState.inHub
+                    ? 'ESCOLHA UM PORTAL TEMPORAL'
+                    : activeBoss
+                        ? 'DERROTE O CHEFE'
+                        : 'ELIMINE AS GALINHAS',
+                progressLabel: gameState.inHub
+                    ? 'ERAS CONCLUÍDAS'
+                    : activeBoss
+                        ? 'VIDA DO CHEFE'
+                        : 'ABATES DA ERA',
+                progressCount: gameState.inHub
+                    ? `${completedEras} / 8`
+                    : activeBoss
+                        ? `${Math.max(0, Math.ceil(gameState.bossEntity.hp))} HP`
+                        : `${Math.min(gameState.killsInEpoch, target)} / ${target}`,
+                progress: gameState.inHub
+                    ? completedEras / 8
+                    : activeBoss
+                        ? 1 - gameState.bossEntity.hp / gameState.bossEntity.maxHp
+                        : progressValue / target,
+                temporalState: CS.past
+                    ? `PASSADO · ${Math.max(0, (CS.until - performance.now()) / 1000).toFixed(1)}s`
+                    : gameState.inHub
+                        ? 'HUB SEGURO'
+                        : 'PRESENTE'
+            });
         }
 
         function updateBossHPBar() {
             if (gameState.bossEntity) {
                 const pct = Math.max(0, (gameState.bossEntity.hp / gameState.bossEntity.maxHp) * 100);
                 document.getElementById('boss-hp-bar').style.width = `${pct}%`;
+                updatePixiHUD();
             }
         }
 
@@ -3487,6 +3553,12 @@ Object.assign(window, {
     startRun
 });
 
-window.addEventListener('load', () => {
-    gameRuntime.start();
+window.addEventListener('load', async () => {
+    try {
+        await pixiHud.initialize(document.getElementById('canvas-container'));
+        gameRuntime.start();
+    } catch (error) {
+        console.error("Não foi possível inicializar o HUD PixiJS.", error);
+        throw error;
+    }
 });
