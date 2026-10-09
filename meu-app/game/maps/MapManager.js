@@ -4,14 +4,16 @@ export class MapManager {
     #finishMap;
     #fallback;
     #beforeBuild;
+    #afterBuild;
     #builders = new Map();
 
-    constructor({ epochs, buildBase, finishMap, fallback, beforeBuild = () => {} }) {
+    constructor({ epochs, buildBase, finishMap, fallback, beforeBuild = () => {}, afterBuild = () => {} }) {
         this.#epochs = epochs;
         this.#buildBase = buildBase;
         this.#finishMap = finishMap;
         this.#fallback = fallback;
         this.#beforeBuild = beforeBuild;
+        this.#afterBuild = afterBuild;
     }
 
     register(epochIndex, builder) {
@@ -34,5 +36,6 @@ export class MapManager {
         this.#buildBase(epochIndex);
         builder(epochIndex);
         this.#finishMap(epochIndex);
+        this.#afterBuild(epochIndex);
     }
 }

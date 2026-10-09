@@ -3,7 +3,10 @@
         import { EPOCHS, HUB_COLORS } from "./game/maps/MapCatalog.js";
         import { MapManager } from "./game/maps/MapManager.js";
 
-        const gameRuntime = new GameRuntime({ initializeEngine: initEngine, animate });
+        const gameRuntime = new GameRuntime({
+            initializeEngine: () => initEngine(),
+            animate: () => animate()
+        });
         const audio = gameRuntime.audio;
 
         let gameState = {
@@ -2840,7 +2843,20 @@ const mapManager = new MapManager({
     buildBase: base,
     finishMap: finish,
     fallback: _std,
-    beforeBuild: () => { window.TOPFL = 1; }
+    beforeBuild: () => {
+        window.TOPFL = 1;
+        Q.torches = [];
+        Q.sky = [];
+    },
+    afterBuild: index => {
+        const epoch = EPOCHS[index];
+        quakeify(epoch.skyColor, epoch.fogColor, true);
+        gates.forEach(g => [-1, 1].forEach(side => addTorch(
+            g.doorX + side * (g.k === 2 ? 11 : 9),
+            4.6,
+            g.z + 1.9
+        )));
+    }
 });
 GEN.forEach((builder, index) => mapManager.register(index, builder));
 loadEpochLevel = function (i) { return mapManager.build(i); };
