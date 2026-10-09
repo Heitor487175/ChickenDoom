@@ -1,4 +1,4 @@
-# 🐔 CHICKEN DOOM
+# 🐔 OOOPS ALL CHICKENS
 
 > ## O Núcleo do Tempo
 >
