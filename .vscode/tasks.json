@@ -2,7 +2,7 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "Chicken Doom: npm run dev",
+			"label": "OOPS! ALL CHICKENS: npm run dev",
 			"type": "shell",
 			"command": "npm --prefix meu-app run dev -- --host 0.0.0.0",
 			"isBackground": true,

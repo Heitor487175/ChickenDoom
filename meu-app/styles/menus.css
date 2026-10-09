@@ -55,7 +55,7 @@
 #inv-modal > div::before,
 #shop-modal > div::before,
 #pz-modal > div::before {
-    content: "CHICKEN DOOM  /  TEMPORAL COMMAND";
+    content: "OOPS! ALL CHICKENS  /  TEMPORAL COMMAND";
     display: block;
     margin: -0.35rem 0 1.1rem;
     padding-bottom: 0.65rem;

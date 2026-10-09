@@ -1,10 +1,10 @@
-# 🐔 CHICKEN DOOM
+# 🐔 OOPS! ALL CHICKENS
 
 > ## O Núcleo do Tempo
 >
 > **O apocalipse tem penas. E você tem uma arma.**
 
-Chicken Doom é um jogo indie de ação e plataforma que combina **movimentação, exploração e progressão de habilidades** com uma aventura inspirada nos clássicos jogos de ação.
+OOPS! ALL CHICKENS é um jogo indie de ação e plataforma que combina **movimentação, exploração e progressão de habilidades** com uma aventura inspirada nos clássicos jogos de ação.
 
 Enfrente galinhas zumbis, domine novas habilidades de movimento, explore caminhos secretos e prepare-se para atravessar diferentes épocas, enfrentar criaturas alienígenas e descobrir os mistérios por trás do Núcleo do Tempo.
 
@@ -26,7 +26,7 @@ Os projéteis soltam faíscas ao atingir o chão ou paredes. As armas de dano em
 
 ## Publicar uma nova versão
 
-Depois de enviar o workflow para `main`, abra **Actions → Publish Chicken Doom release → Run workflow**, selecione a branch `main` e informe uma nova tag, por exemplo `v1.0.1`. O workflow gera o AppImage e o instalador `.exe`, então cria ou atualiza o Release com os dois downloads.
+Depois de enviar o workflow para `main`, abra **Actions → Publish OOPS! ALL CHICKENS release → Run workflow**, selecione a branch `main` e informe uma nova tag, por exemplo `v1.0.1`. O workflow gera o AppImage e o instalador `.exe`, então cria ou atualiza o Release com os dois downloads.
 
 ```sh
 # Alternativamente, publique ambos os downloads enviando uma tag:
@@ -38,7 +38,7 @@ O instalador Windows não é assinado digitalmente; o Windows pode exibir um avi
 
 ## 🎮 Sobre o jogo
 
-Em **Chicken Doom**, movimentar-se é tão importante quanto combater.
+Em **OOPS! ALL CHICKENS**, movimentar-se é tão importante quanto combater.
 
 O jogador precisa dominar suas habilidades, explorar o ambiente e encontrar maneiras de superar desafios. Conforme avança, novas possibilidades de movimentação são desbloqueadas, transformando a maneira como cada mapa pode ser explorado.
 
@@ -73,7 +73,7 @@ Os downloads abaixo ficam disponíveis nos Releases do GitHub. A versão mais re
 
 ### 🐧 Linux
 
-[⬇️ **Chicken Doom v1.0.1 para Linux (.AppImage)**](https://github.com/Heitor487175/ChickenDoom/releases/download/v1.0.1/ChickenDoom-AppImages.zip) · [Versão anterior v1.0.0](https://github.com/Heitor487175/ChickenDoom/releases/download/v1.0.0/ChickenDoom-AppImages.zip)
+[⬇️ **OOPS! ALL CHICKENS v1.0.1 para Linux (.AppImage)**](https://github.com/Heitor487175/ChickenDoom/releases/download/v1.0.1/ChickenDoom-AppImages.zip) · [Versão anterior v1.0.0](https://github.com/Heitor487175/ChickenDoom/releases/download/v1.0.0/ChickenDoom-AppImages.zip)
 
 O pacote contém o aplicativo AppImage para execução em sistemas Linux compatíveis.
 
@@ -103,7 +103,7 @@ O pacote contém o aplicativo AppImage para execução em sistemas Linux compat�
 
 ### 🪟 Windows
 
-[⬇️ **Chicken Doom v1.0.1 para Windows (.exe)**](https://github.com/Heitor487175/ChickenDoom/releases/download/v1.0.1/Chicken-Doom-Setup.exe) · [Versão anterior v1.0.0](https://github.com/Heitor487175/ChickenDoom/releases/download/v1.0.0/Chicken-Doom-Setup.exe)
+[⬇️ **OOPS! ALL CHICKENS v1.0.1 para Windows (.exe)**](https://github.com/Heitor487175/ChickenDoom/releases/download/v1.0.1/Chicken-Doom-Setup.exe) · [Versão anterior v1.0.0](https://github.com/Heitor487175/ChickenDoom/releases/download/v1.0.0/Chicken-Doom-Setup.exe)
 
 Baixe o instalador e siga as instruções para instalar o jogo.
 
@@ -113,7 +113,7 @@ Baixe o instalador e siga as instruções para instalar o jogo.
 
 ## 🗺️ Visão de desenvolvimento
 
-O objetivo do Chicken Doom é construir uma experiência em que cada fase tenha sua própria identidade, combinando exploração, combate, movimentação e progressão.
+O objetivo do OOPS! ALL CHICKENS é construir uma experiência em que cada fase tenha sua própria identidade, combinando exploração, combate, movimentação e progressão.
 
 ### Próximos objetivos
 
@@ -132,7 +132,7 @@ O objetivo do Chicken Doom é construir uma experiência em que cada fase tenha 
 
 ## 🛠️ Tecnologias
 
-Chicken Doom é desenvolvido com tecnologias voltadas para jogos e aplicações executadas no navegador e no desktop.
+OOPS! ALL CHICKENS é desenvolvido com tecnologias voltadas para jogos e aplicações executadas no navegador e no desktop.
 
 - **JavaScript** — lógica e sistemas do jogo.
 - **HTML5** — estrutura da aplicação.
@@ -154,7 +154,7 @@ Toda contribuição que ajude a melhorar a experiência de jogo é bem-vinda!
 
 Desenvolvido por [**Heitor Martins (@Heitor487175)**](https://github.com/Heitor487175).
 
-Chicken Doom é um projeto indie criado com o objetivo de experimentar mecânicas de gameplay, desenvolver sistemas de jogo e transformar uma ideia absurda em uma experiência cada vez mais completa.
+OOPS! ALL CHICKENS é um projeto indie criado com o objetivo de experimentar mecânicas de gameplay, desenvolver sistemas de jogo e transformar uma ideia absurda em uma experiência cada vez mais completa.
 
 ---
 

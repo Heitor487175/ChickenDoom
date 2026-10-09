@@ -1,4 +1,4 @@
-name: Publish Chicken Doom release
+name: Publish OOPS! ALL CHICKENS release
 
 on:
   push:
@@ -108,7 +108,7 @@ jobs:
             gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
           else
             gh release create "$RELEASE_TAG" "${assets[@]}" \
-              --title "Chicken Doom $RELEASE_TAG" \
+              --title "OOPS! ALL CHICKENS $RELEASE_TAG" \
               --target "$GITHUB_SHA" \
               --generate-notes
           fi

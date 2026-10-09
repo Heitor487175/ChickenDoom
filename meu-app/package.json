@@ -5,7 +5,7 @@
   "description": "Jogo de ação em primeira pessoa com galinhas zumbis através do tempo.",
   "license": "ISC",
   "author": "",
-  "desktopName": "Chicken Doom",
+  "desktopName": "OOPS! ALL CHICKENS",
   "type": "module",
   "main": "main.js",
   "scripts": {
@@ -34,7 +34,7 @@
   },
   "build": {
     "appId": "com.chickendoom.game",
-    "productName": "Chicken Doom",
+    "productName": "OOPS! ALL CHICKENS",
     "directories": {
       "output": "release"
     },
