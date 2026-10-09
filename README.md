@@ -1,23 +1,48 @@
-# Chicken Doom
+# 🐔 Chicken Doom
 
-## Download para Linux
+> **O Núcleo do Tempo**
 
-[Baixar o ZIP com o AppImage](https://github.com/Heitor487175/ChickenDoom/releases/latest/download/ChickenDoom-AppImages.zip)
+Chicken Doom é um jogo de ação e plataforma com foco em **movimentação, exploração e progressão de habilidades**.
 
-## Download para Windows
+Controle seu personagem, domine suas habilidades de movimento e atravesse mapas projetados para aproveitar cada nova possibilidade de gameplay.
 
-[Baixar o instalador do Windows (.exe)](https://github.com/Heitor487175/ChickenDoom/releases/latest/download/Chicken-Doom-Setup.exe)
+---
 
-Os arquivos são publicados nos GitHub Releases, não no histórico do repositório. Os links só funcionam depois da criação do Release.
+## 🎮 Sobre o jogo
 
-## Publicar uma nova versão
+Em **Chicken Doom**, a movimentação é parte fundamental da experiência.
 
-Depois de enviar o workflow para `main`, abra **Actions → Publish Chicken Doom release → Run workflow**, selecione a branch `main` e informe uma tag, por exemplo `v1.0.0`. O workflow gera o AppImage e o instalador `.exe`, então cria ou atualiza o Release com os dois downloads.
+Conforme o jogador avança, novas habilidades são desbloqueadas, permitindo:
 
-```sh
-# Alternativamente, publique ambos os downloads enviando uma tag:
-git tag v1.0.0
-git push origin v1.0.0
-```
+- 🏃 Movimentação mais rápida
+- 🦘 Novas possibilidades de salto
+- ⚡ Acesso a novas áreas dos mapas
+- 🧭 Exploração de caminhos anteriormente inacessíveis
+- 🎯 Maior liberdade para atravessar os desafios
 
-O instalador Windows não é assinado digitalmente; o Windows pode exibir um aviso do SmartScreen na primeira execução.
+Os mapas são projetados para trabalhar em conjunto com a progressão do jogador. Cada nova habilidade não serve apenas para facilitar a movimentação — ela também pode revelar **novos caminhos, áreas e possibilidades de exploração**.
+
+---
+
+## 📥 Download
+
+### 🐧 Linux
+
+[⬇️ Baixar Chicken Doom para Linux (.AppImage)](https://github.com/Heitor487175/ChickenDoom/releases/latest/download/ChickenDoom-AppImages.zip)
+
+O pacote contém o aplicativo **AppImage**, pronto para execução em sistemas Linux compatíveis.
+
+### 🪟 Windows
+
+[⬇️ Baixar Chicken Doom para Windows (.exe)](https://github.com/Heitor487175/ChickenDoom/releases/latest/download/Chicken-Doom-Setup.exe)
+
+> ⚠️ O instalador do Windows não possui assinatura digital. Por isso, o Windows pode exibir um aviso do **SmartScreen** durante a instalação ou na primeira execução.
+
+---
+
+## 🚀 Como executar no Linux
+
+Após baixar o pacote:
+
+```bash
+unzip ChickenDoom-AppImages.zip
