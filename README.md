@@ -22,6 +22,8 @@ Os construtores de geometria e as mecânicas específicas de cada fase ainda est
 
 O catálogo, as categorias, raridades, ofertas da loja e configurações dos projéteis ficam em [`meu-app/game/weapons/WeaponCatalog.js`](./meu-app/game/weapons/WeaponCatalog.js). A lógica de munição, recarga, disparo e equipamento está em [`meu-app/game/weapons/WeaponSystem.js`](./meu-app/game/weapons/WeaponSystem.js), e os modelos e pickups visuais em [`meu-app/game/weapons/WeaponVisuals.js`](./meu-app/game/weapons/WeaponVisuals.js).
 
+Os projéteis soltam faíscas ao atingir o chão ou paredes. As armas de dano em área também mostram uma explosão expansiva com faíscas.
+
 ## Publicar uma nova versão
 
 Depois de enviar o workflow para `main`, abra **Actions → Publish Chicken Doom release → Run workflow**, selecione a branch `main` e informe uma tag, por exemplo `v1.0.0`. O workflow gera o AppImage e o instalador `.exe`, então cria ou atualiza o Release com os dois downloads.

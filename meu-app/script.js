@@ -207,6 +207,12 @@
         let particles = [];
         let items = [];
         let levelObstacles = [];
+        const SPARK_GEOMETRY = new THREE.BoxGeometry(1, 1, 1);
+        const SPARK_MATERIALS = [
+            new THREE.MeshBasicMaterial({ color: 0xffc857 }),
+            new THREE.MeshBasicMaterial({ color: 0xff6b35 })
+        ];
+        const EXPLOSION_GEOMETRY = new THREE.SphereGeometry(1, 14, 10);
 
         function createMachineGunModel() {
             const weaponModel = createWeaponModel();
@@ -599,7 +605,11 @@
         function addObj(o) { scene.add(o); levelObstacles.push(o); return o; }
 
         function clearWorld() {
-            [enemies, bullets, enemyProjectiles, particles, items].forEach(arr => arr.forEach(o => scene.remove(o.mesh)));
+            [enemies, bullets, enemyProjectiles, items].forEach(arr => arr.forEach(o => scene.remove(o.mesh)));
+            particles.forEach(p => {
+                scene.remove(p.mesh);
+                if (p.disposeMaterial) p.mesh.material.dispose();
+            });
             levelObstacles.forEach(o => scene.remove(o));
             enemies = []; bullets = []; enemyProjectiles = []; particles = []; items = [];
             nav.ver++; levelObstacles = []; colliders = []; hubPortals = []; hubStations = []; gates = []; secretWalls = []; hubCrystal = null;
@@ -1292,6 +1302,7 @@
             if (b.exploded) return;
             b.exploded = true;
             audio.playExplosion();
+            createExplosionEffect(b.mesh.position, b.radius);
             createFeatherParticles(b.mesh.position, 14);
             recoilBlast(b.mesh.position, b.blastR, b.blastF, b.selfDmg);
             const R = b.radius;
@@ -1299,6 +1310,53 @@
                 const d = e.mesh.position.distanceTo(b.mesh.position);
                 if (d < R) damageEnemy(e, b.damage * (1 - d / (R + 2)));
             });
+        }
+
+        function createSparkParticles(pos, count, floorY) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 0.12 + Math.random() * 0.2;
+                const mesh = new THREE.Mesh(SPARK_GEOMETRY, SPARK_MATERIALS[i % SPARK_MATERIALS.length]);
+                mesh.position.copy(pos);
+                mesh.scale.set(0.035, 0.035, 0.16 + Math.random() * 0.12);
+                mesh.rotation.set(Math.random() * Math.PI, angle, Math.random() * Math.PI);
+                scene.add(mesh);
+                particles.push({
+                    mesh,
+                    vel: new THREE.Vector3(
+                        Math.cos(angle) * speed,
+                        0.04 + Math.random() * 0.18,
+                        Math.sin(angle) * speed
+                    ),
+                    g: 0.025,
+                    y0: floorY,
+                    life: 9 + Math.floor(Math.random() * 7)
+                });
+            }
+        }
+
+        function createExplosionEffect(pos, radius) {
+            const material = new THREE.MeshBasicMaterial({
+                color: 0xff6b35,
+                transparent: true,
+                opacity: 0.78,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+            const flash = new THREE.Mesh(EXPLOSION_GEOMETRY, material);
+            flash.position.copy(pos);
+            flash.scale.setScalar(0.35);
+            scene.add(flash);
+            particles.push({
+                mesh: flash,
+                vel: new THREE.Vector3(),
+                life: 16,
+                maxLife: 16,
+                expand: radius,
+                opacity: material.opacity,
+                disposeMaterial: true
+            });
+            createSparkParticles(pos, 20, window.projectileFloorAt(pos.x, pos.z, pos.y));
         }
 
         function equipWeapon(id) {
@@ -1698,7 +1756,7 @@
             if (cfg.orient) mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
             if (cfg.face) mesh.rotation.y = Math.atan2(dir.x, dir.z);
             scene.add(mesh);
-            bullets.push({ mesh, dir, speed: cfg.speed, life: cfg.life, damage, pierce: !!cfg.pierce, splash: !!cfg.splash, radius: cfg.splashRadius || 7, blastR: cfg.blastRadius || 0, blastF: cfg.blastForce || 0, selfDmg: cfg.selfDamage || 0, grav: cfg.gravity || 0, bounce: !!cfg.bounce, hit: new Set() });
+            bullets.push({ mesh, dir, speed: cfg.speed, life: cfg.life, damage, pierce: !!cfg.pierce, splash: !!cfg.splash, radius: cfg.splashRadius || 7, projectileRadius: cfg.geometryRadius || 0, blastR: cfg.blastRadius || 0, blastF: cfg.blastForce || 0, selfDmg: cfg.selfDamage || 0, grav: cfg.gravity || 0, bounce: !!cfg.bounce, hit: new Set() });
         }
 
         function fireBossProjectile(fromPos, targetPos) {
@@ -2204,19 +2262,31 @@
                 // 4. TIROS DO JOGADOR
                 for (let i = bullets.length - 1; i >= 0; i--) {
                     const b = bullets[i];
+                    const previousY = b.mesh.position.y;
                     if (b.grav) b.dir.y -= b.grav;
                     b.mesh.position.addScaledVector(b.dir, b.speed);
                     b.life--;
                     let dead = b.life <= 0;
                     if (!dead) {
                         const wc = bulletBlocked(b.mesh.position);
-                        if (wc) { if (wc.secret) hitSecret(wc.secret); dead = true; }
-                        else if (b.splash) {
-                            const fy = (typeof floorAt === 'function' ? floorAt() : 0) + 0.1;
-                            if (b.mesh.position.y <= fy) {
-                                b.mesh.position.y = fy;
-                                if (b.bounce) { b.dir.y = Math.abs(b.dir.y) * 0.45; b.dir.x *= 0.7; b.dir.z *= 0.7; } // granada quica
-                                else dead = true; // foguete/frango explode ao tocar o chão
+                        if (wc) {
+                            if (wc.secret) hitSecret(wc.secret);
+                            if (!b.splash) createSparkParticles(b.mesh.position, 8, window.projectileFloorAt(b.mesh.position.x, b.mesh.position.z, previousY));
+                            dead = true;
+                        } else {
+                            const floorY = window.projectileFloorAt(b.mesh.position.x, b.mesh.position.z, previousY + 0.1);
+                            const projectileRadius = b.projectileRadius;
+                            if (b.mesh.position.y - projectileRadius <= floorY + 0.1) {
+                                b.mesh.position.y = floorY + projectileRadius;
+                                if (b.bounce) {
+                                    createSparkParticles(b.mesh.position, 6, floorY);
+                                    b.dir.y = Math.abs(b.dir.y) * 0.45;
+                                    b.dir.x *= 0.7;
+                                    b.dir.z *= 0.7;
+                                } else {
+                                    if (!b.splash) createSparkParticles(b.mesh.position, 8, floorY);
+                                    dead = true;
+                                }
                             }
                         }
                     }
@@ -2244,9 +2314,15 @@
                     const p = particles[i];
                     p.mesh.position.add(p.vel);
                     if (p.g) { p.vel.y -= p.g; if (p.mesh.position.y < (p.y0 || 0) + 0.06) { p.mesh.position.y = (p.y0 || 0) + 0.06; p.vel.set(p.vel.x * 0.5, 0, p.vel.z * 0.5); } }
+                    if (p.expand) {
+                        const progress = 1 - p.life / p.maxLife;
+                        p.mesh.scale.setScalar(0.35 + p.expand * progress);
+                        p.mesh.material.opacity = p.opacity * (1 - progress);
+                    }
                     p.life--;
                     if (p.life <= 0) {
                         scene.remove(p.mesh);
+                        if (p.disposeMaterial) p.mesh.material.dispose();
                         particles.splice(i, 1);
                     }
                 }
@@ -2511,6 +2587,25 @@ window.floorAt = function () {
         if (h <= f && h > g) g = h;
     }
     _fg = g; return g;
+};
+window.projectileFloorAt = function (x, z, maxY) {
+    let height = 0;
+    for (const surface of surf) {
+        if (x < surface.x0 || x > surface.x1 || z < surface.z0 || z > surface.z1) continue;
+        let surfaceHeight = surface.h;
+        if (surface.lift) surfaceHeight = surface.lift.h;
+        else if (surface.n) {
+            const t = surface.ax === 'x'
+                ? (x - surface.x0) / (surface.x1 - surface.x0)
+                : (z - surface.z0) / (surface.z1 - surface.z0);
+            const step = surface.sg > 0 ? t : 1 - t;
+            surfaceHeight = (surface.base || 0)
+                + Math.min(surface.n, Math.floor(step * surface.n) + 1)
+                * ((surface.top || UP) - (surface.base || 0)) / surface.n;
+        }
+        if (surfaceHeight <= maxY && surfaceHeight > height) height = surfaceHeight;
+    }
+    return height;
 };
 // ---- colisões com níveis (térreo / andar) e grades que deixam ver e atirar através ----
 const okP = c => !c.en && !(c.low && SLIDE.active) && !(c.dash && DASH.active) && (c.lv === undefined || c.lv === plv());
