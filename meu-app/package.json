@@ -1,6 +1,6 @@
 {
   "name": "chicken-doom",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Jogo de ação em primeira pessoa com galinhas zumbis através do tempo.",
   "license": "ISC",

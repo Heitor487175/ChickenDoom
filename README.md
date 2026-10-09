@@ -26,12 +26,12 @@ Os projéteis soltam faíscas ao atingir o chão ou paredes. As armas de dano em
 
 ## Publicar uma nova versão
 
-Depois de enviar o workflow para `main`, abra **Actions → Publish Chicken Doom release → Run workflow**, selecione a branch `main` e informe uma tag, por exemplo `v1.0.0`. O workflow gera o AppImage e o instalador `.exe`, então cria ou atualiza o Release com os dois downloads.
+Depois de enviar o workflow para `main`, abra **Actions → Publish Chicken Doom release → Run workflow**, selecione a branch `main` e informe uma nova tag, por exemplo `v1.0.1`. O workflow gera o AppImage e o instalador `.exe`, então cria ou atualiza o Release com os dois downloads.
 
 ```sh
 # Alternativamente, publique ambos os downloads enviando uma tag:
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.1
+git push origin v1.0.1
 ```
 
 O instalador Windows não é assinado digitalmente; o Windows pode exibir um aviso do SmartScreen na primeira execução.
@@ -69,11 +69,11 @@ A exploração é apenas parte da experiência. O jogador também precisa enfren
 
 ## 📥 Download
 
-Baixe a versão disponível para seu sistema operacional.
+Os downloads abaixo ficam disponíveis nos Releases do GitHub. A versão mais recente é a **v1.0.1**; os arquivos da versão anterior **v1.0.0** continuam disponíveis.
 
 ### 🐧 Linux
 
-[⬇️ **Baixar Chicken Doom para Linux (.AppImage)**](https://github.com/Heitor487175/ChickenDoom/releases/latest/download/ChickenDoom-AppImages.zip)
+[⬇️ **Chicken Doom v1.0.1 para Linux (.AppImage)**](https://github.com/Heitor487175/ChickenDoom/releases/download/v1.0.1/ChickenDoom-AppImages.zip) · [Versão anterior v1.0.0](https://github.com/Heitor487175/ChickenDoom/releases/download/v1.0.0/ChickenDoom-AppImages.zip)
 
 O pacote contém o aplicativo AppImage para execução em sistemas Linux compatíveis.
 
@@ -103,7 +103,7 @@ O pacote contém o aplicativo AppImage para execução em sistemas Linux compat�
 
 ### 🪟 Windows
 
-[⬇️ **Baixar Chicken Doom para Windows (.exe)**](https://github.com/Heitor487175/ChickenDoom/releases/latest/download/Chicken-Doom-Setup.exe)
+[⬇️ **Chicken Doom v1.0.1 para Windows (.exe)**](https://github.com/Heitor487175/ChickenDoom/releases/download/v1.0.1/Chicken-Doom-Setup.exe) · [Versão anterior v1.0.0](https://github.com/Heitor487175/ChickenDoom/releases/download/v1.0.0/Chicken-Doom-Setup.exe)
 
 Baixe o instalador e siga as instruções para instalar o jogo.
 
