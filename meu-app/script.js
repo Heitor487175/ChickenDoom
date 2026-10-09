@@ -767,6 +767,20 @@
         }
 
         // ---- util visual ----
+        function makeInteractionRing() {
+            const group = new THREE.Group();
+            group.rotation.x = Math.PI / 2;
+            const materials = [
+                new THREE.MeshBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0.8, depthWrite: false }),
+                new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false })
+            ];
+            const outer = new THREE.Mesh(new THREE.TorusGeometry(1.35, 0.045, 8, 48), materials[0]);
+            const inner = new THREE.Mesh(new THREE.TorusGeometry(1.08, 0.025, 6, 48), materials[1]);
+            outer.renderOrder = inner.renderOrder = 1;
+            group.add(outer, inner);
+            return { group, materials };
+        }
+        window.makeInteractionRing = makeInteractionRing;
         function makeLabel(l1, l2, col) {
             const c = document.createElement('canvas'); c.width = 512; c.height = 160;
             const x = c.getContext('2d');
@@ -778,6 +792,46 @@
             const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, fog: false }));
             spr.scale.set(8, 2.5, 1);
             return spr;
+        }
+        function makeSignboard(title, subtitle, color, width = 5.2, height = 1.7, supportLength = 1.1) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 768; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#171717';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 12;
+            ctx.strokeRect(6, 6, canvas.width - 12, canvas.height - 12);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 48px monospace';
+            ctx.fillText(title, canvas.width / 2, 94, canvas.width - 48);
+            ctx.fillStyle = color;
+            ctx.font = 'bold 38px monospace';
+            ctx.fillText(subtitle, canvas.width / 2, 178, canvas.width - 48);
+
+            const group = new THREE.Group();
+            const frameMaterial = new THREE.MeshStandardMaterial({ color: 0x30291f, metalness: 0.45, roughness: 0.55 });
+            const board = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.18), frameMaterial);
+            group.add(board);
+            const faceMaterial = new THREE.MeshBasicMaterial({
+                map: new THREE.CanvasTexture(canvas),
+                color: 0xffffff,
+                side: THREE.FrontSide
+            });
+            const face = new THREE.Mesh(new THREE.PlaneGeometry(width - 0.12, height - 0.12), faceMaterial);
+            face.position.z = 0.096;
+            group.add(face);
+            if (supportLength > 0) {
+                const postMaterial = new THREE.MeshStandardMaterial({ color: 0x5b4630, metalness: 0.25, roughness: 0.7 });
+                [-0.36, 0.36].forEach(offset => {
+                    const post = new THREE.Mesh(new THREE.BoxGeometry(0.14, supportLength, 0.16), postMaterial);
+                    post.position.set(width * offset, -height / 2 - supportLength / 2 + 0.04, 0);
+                    group.add(post);
+                });
+            }
+            return group;
         }
         function relabel(parent, old, l1, l2, col) {
             const pos = old.position.clone();
@@ -801,21 +855,12 @@
             const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.06, 12), hm);
             brim.position.set(0, 1.7, -0.38); m.add(brim);
             m.scale.set(sc, sc, sc);
+            const interactionRing = makeInteractionRing();
+            interactionRing.group.position.y = 0.06;
+            interactionRing.group.scale.setScalar(1 / sc);
+            m.add(interactionRing.group);
+            m.userData.interactionRing = interactionRing;
             return m;
-        }
-        function questTag(q) {
-            const st = gameState.quests[q.id] || 0, p = q.prog();
-            if (st === 2) return ['✔ Concluída', '#4ade80'];
-            if (p >= q.goal) return ['✅ Receber recompensa!', '#facc15'];
-            if (st === 1) return ['⏳ ' + Math.min(p, q.goal) + '/' + q.goal, '#38bdf8'];
-            return ['❗ Nova missão', '#fb923c'];
-        }
-        function relabelQuests() {
-            hubStations.forEach(st => {
-                if (st.type !== 'quest') return;
-                const t = questTag(st.q);
-                st.sprite = relabel(st.npc, st.sprite, st.q.npc, t[0], t[1]);
-            });
         }
 
         // ===== HUB TEMPORAL =====
@@ -870,11 +915,15 @@
                 disc.position.y = 3.4; g.add(disc);
                 const ring = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.07, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
                 ring.position.y = 3.4; ring.visible = unlocked; g.add(ring);
-                const lbl = makeLabel(ep.name, !unlocked ? '🔒 BLOQUEADO' : (done ? '✔ COMPLETA' : '▶ ENTRAR'), css);
-                lbl.position.y = 6.6; g.add(lbl);
+                const sign = makeSignboard(ep.name, !unlocked ? 'BLOQUEADO' : (done ? 'COMPLETA' : 'ENTRAR'), css, 4.6, 1.55, 1.45);
+                sign.position.set(3.6, 2.15, 0);
+                g.add(sign);
+                const marker = makeInteractionRing();
+                marker.group.position.y = 0.06;
+                g.add(marker.group);
                 if (unlocked && i % 2 === 0) { const pl = new THREE.PointLight(col, 1.1, 16); pl.position.set(0, 3.4, 2); g.add(pl); }
                 addObj(g);
-                hubPortals.push({ i, x, z, disc, ring });
+                hubPortals.push({ i, x, z, disc, ring, marker });
             });
 
             // Loja do Cacareco
@@ -889,15 +938,14 @@
             };
             const part = (grp, geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); grp.add(m); return m; };
 
-            let shopLabel;
             const sb = placeBooth(-23, 8, b => {
                 part(b, new THREE.BoxGeometry(6, 1.2, 1.6), wood, 0, 0.6, 1.2);
                 part(b, new THREE.BoxGeometry(7.5, 0.3, 4.5), new THREE.MeshLambertMaterial({ color: 0xdc2626 }), 0, 3.6, 0.2);
                 part(b, new THREE.BoxGeometry(0.3, 3.6, 0.3), wood, -3.4, 1.8, 2.2);
                 part(b, new THREE.BoxGeometry(0.3, 3.6, 0.3), wood, 3.4, 1.8, 2.2);
                 part(b, new THREE.BoxGeometry(1.2, 1.2, 1.2), wood, -2, 0.6, -1.8);
-                shopLabel = makeLabel('🛒 LOJA DO CACARECO', 'Armas e Ships [E]', '#fbbf24');
-                shopLabel.position.set(0, 5.4, 1); b.add(shopLabel);
+                const sign = makeSignboard('LOJA DO CACARECO', 'ARMAS E SHIPS [E]', '#fbbf24', 6.2, 1.35, 0.85);
+                sign.position.set(0, 4.7, 0.2); b.add(sign);
             });
             const merchant = createNpc(0xfff7ed, 0x1f2937, 1.5);
             merchant.position.set(-23 - sb.dx * 0.9, 0, 8 - sb.dz * 0.9);
@@ -912,20 +960,21 @@
                 const horn = part(b, new THREE.ConeGeometry(0.5, 1.2, 8), metal, 2.2, 1.55, 0); horn.rotation.z = -Math.PI / 2;
                 part(b, new THREE.BoxGeometry(0.9, 0.2, 0.7), new THREE.MeshBasicMaterial({ color: 0xfb923c }), 0, 2, 0);
                 const l = new THREE.PointLight(0xfb923c, 1, 12); l.position.set(0, 2.6, 0); b.add(l);
-                const lb = makeLabel('🔨 BIGORNA', 'Melhore suas armas [E]', '#fb923c'); lb.position.set(0, 4.2, 0); b.add(lb);
+                const sign = makeSignboard('BIGORNA', 'MELHORE SUAS ARMAS [E]', '#fb923c', 5.6, 1.35, 1.55);
+                sign.position.set(0, 4.35, 0); b.add(sign);
             });
-            hubStations.push({ type: 'anvil', x: 23, z: 8, range: 8, label: 'Usar a Bigorna' });
+            const anvilMarker = makeInteractionRing();
+            anvilMarker.group.position.set(23, 0.06, 8);
+            addObj(anvilMarker.group);
+            hubStations.push({ type: 'anvil', x: 23, z: 8, range: 8, label: 'Usar a Bigorna', marker: anvilMarker });
 
             // NPCs de missão
             QUESTS.forEach(q => {
                 const npc = createNpc(q.color, 0x7e22ce, q.id === 'q5' ? 1.1 : 1.4);
                 npc.position.set(q.x, 0, q.z);
-                const t = questTag(q);
-                const spr = makeLabel(q.npc, t[0], t[1]);
-                spr.position.set(0, 3.2, 0); npc.add(spr);
                 addObj(npc);
                 colliders.push({ x: q.x, z: q.z, r: 1.2 });
-                hubStations.push({ type: 'quest', x: q.x, z: q.z, range: 5, label: 'Falar com ' + q.npc, q, npc, sprite: spr });
+                hubStations.push({ type: 'quest', x: q.x, z: q.z, range: 5, label: 'Falar com ' + q.npc, q, npc });
             });
 
             playerObj.position.set(0, PLAYER_HEIGHT, 24);
@@ -947,11 +996,18 @@
             let hint = '';
             if (hubCrystal) { hubCrystal.rotation.y += 0.02; hubCrystal.position.y = 3.6 + Math.sin(t) * 0.25; }
             hubStations.forEach(s => {
-                if (s.npc) { s.npc.position.y = Math.abs(Math.sin(t + s.x)) * 0.08; s.npc.lookAt(p.x, 0, p.z); s.npc.rotateY(Math.PI); }
+                if (s.npc) {
+                    s.npc.position.y = Math.abs(Math.sin(t + s.x)) * 0.08;
+                    s.npc.lookAt(p.x, 0, p.z);
+                    s.npc.rotateY(Math.PI);
+                    const marker = s.npc.userData.interactionRing;
+                    if (marker) marker.group.position.y = (0.06 - s.npc.position.y) / s.npc.scale.y;
+                }
             });
             for (const h of hubPortals) {
                 h.ring.rotation.z += 0.04;
                 h.disc.material.opacity = (h.i < gameState.unlocked ? 0.55 : 0.3) + Math.sin(t + h.i) * 0.12;
+
                 const d = Math.hypot(p.x - h.x, p.z - h.z);
                 if (d < 2.4) {
                     if (h.i < gameState.unlocked) { enterLevel(h.i); return; }
@@ -1340,7 +1396,7 @@
                 recalcStats(); gameState.health = gameState.maxHealth;
                 audio.playPickup(); toast('🎁 Recompensa: ' + q.reward);
             } else if (st === 0) gameState.quests[q.id] = 1;
-            saveProgress(); renderNpc(); relabelQuests(); updateHUD();
+            saveProgress(); renderNpc(); updateHUD();
         }
 
         // ===== INVENTÁRIO / BUILD =====
@@ -2409,7 +2465,18 @@ const LORE = ['Diário: "As galinhas comeram o mamute. Todo ele."', 'Grafite: "A
 const DN = ['🔴', '🔵', '🟡', '🟢'], DCOL = ['#ef4444', '#3b82f6', '#facc15', '#22c55e'];
 let L = null, M = 1, WALL, EP, BARM, DECKM;
 const things = [], doors = [], rooms = [], surf = [], pk = [];
+const interactionMarkers = [];
 const add = o => { scene.add(o); levelObstacles.push(o); return o; };
+function registerThing(thing) {
+    if (thing.act) {
+        thing.marker = window.makeInteractionRing();
+        thing.marker.group.position.set(thing.x, (thing.lv || 0) * UP + 0.06, thing.z);
+        add(thing.marker.group);
+        interactionMarkers.push(thing);
+    }
+    things.push(thing);
+    return thing;
+}
 const mat = (c, e) => new THREE.MeshLambertMaterial(e === undefined ? { color: c } : { color: c, emissive: e });
 const mr = (a, b) => M > 0 ? [a, b] : [-b, -a];
 const B = (x, y0, z, w, h, d, m, tex) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y0 + h / 2, z); return tex ? addObj(o) : add(o); };
@@ -2479,7 +2546,7 @@ bulletBlocked = function (pos) {
     return null;
 };
 const _cw = clearWorld;
-clearWorld = function () { _cw(); L = null; things.length = doors.length = rooms.length = surf.length = pk.length = 0; const k = document.getElementById('keys-hud'); if (k) k.innerHTML = ''; };
+clearWorld = function () { _cw(); L = null; things.length = doors.length = rooms.length = surf.length = pk.length = interactionMarkers.length = 0; const k = document.getElementById('keys-hud'); if (k) k.innerHTML = ''; };
 const _int = interact;
 
 // ---- paredes com vãos: portas, grades, painéis secretos ----
@@ -2620,12 +2687,12 @@ function chest(x, z, w, y) { const c = makeChest(); c.position.set(x, y || 0, z)
 function pillarObj(x, z, y0, color, tall) { return B(x, y0, z, 1.4, tall, 1.4, mat(color, color), 0); }
 function terminal(x, z, y, fn, label) {
     const b = B(x, y, z, 1.6, 2.2, 1, mat(0x1f2937)); B(x, y + 1.2, z, 1.2, .9, .3, mat(0x22d3ee, 0x0e7490));
-    things.push({ x, z, lv: y > 3 ? Math.round(y / UP) : undefined, r: 4.5, txt: () => '[E] ' + label, act: fn });
+    registerThing({ x, z, lv: y > 3 ? Math.round(y / UP) : undefined, r: 4.5, txt: () => '[E] ' + label, act: fn });
 }
 function gen(x, z) {
     x *= M; const top = mat(0xdc2626, 0xdc2626), g = { on: false };
     B(x, 0, z, 3, 3, 3, mat(0x374151)); const t = B(x, 3, z, 2, 1.4, 2, top); const gl = new THREE.PointLight(0xff3333, 1.2, 16); gl.position.set(x, 5, z); add(gl);
-    things.push({ x, z, r: 5, txt: () => g.on ? null : '[E] Ativar gerador', act: () => {
+    registerThing({ x, z, r: 5, txt: () => g.on ? null : '[E] Ativar gerador', act: () => {
         if (g.on) return; g.on = true; L.gens++; top.color.setHex(0x22c55e); top.emissive.setHex(0x16a34a); hudKeys(); audio.playExplosion();
         toast('⚡ GERADOR ATIVADO (' + L.gens + '/2)' + (L.gens > 1 ? ' — o reator tem energia!' : ''));
         spawnIn(x - 18, x + 18, z - 14, z + 14, 3);
@@ -2634,7 +2701,7 @@ function gen(x, z) {
 function sw(x, z, y) {
     x *= M; const s = { on: false }, top = mat(0xf59e0b, 0xb45309);
     B(x, y, z, 1.4, 1.6, 1, mat(0x374151)); B(x, y + 1.6, z, .7, .7, .7, top);
-    things.push({ x, z, lv: y > 3 ? Math.round(y / UP) : undefined, r: 4, txt: () => s.on ? null : '[E] Puxar interruptor', act: () => {
+    registerThing({ x, z, lv: y > 3 ? Math.round(y / UP) : undefined, r: 4, txt: () => s.on ? null : '[E] Puxar interruptor', act: () => {
         if (s.on) return; s.on = true; top.color.setHex(0x22c55e); top.emissive.setHex(0x15803d); L.sw++; hudKeys(); audio.playPickup();
         toast('🔘 Interruptor ' + L.sw + '/3' + (L.sw === 3 ? ' — o COFRE da galeria abriu!' : ''));
         if (L.sw === 3) openDoor(L.vault);
@@ -2688,7 +2755,7 @@ loadEpochLevel = function (index) {
     const [la, lb] = mr(-4, 4), lift = { h: 0, t: 0 }; L.lift = lift;
     L.lm = B((la + lb) / 2, 0, 24, 8, .5, 8, mat(0x9ca3af, 0x222222)); L.lm.position.y = -.2;
     surf.push({ x0: la, x1: lb, z0: 20, z1: 28, lift });
-    things.push({ x: (la + lb) / 2, z: 24, r: 7, txt: () => '[E] Elevador ' + (lift.t ? '▼ descer' : '▲ subir'), act: () => { lift.t = lift.t ? 0 : UP; audio.playPickup(); } });
+    registerThing({ x: (la + lb) / 2, z: 24, r: 7, txt: () => '[E] Elevador ' + (lift.t ? '▼ descer' : '▲ subir'), act: () => { lift.t = lift.t ? 0 : UP; audio.playPickup(); } });
     // cofre da galeria (chave vermelha): grade permite VER a chave de baixo; abre com 3 interruptores
     mkDoor('x', X(20), -1, 10, 'sw', { y0: UP, h: 5, lv: 1, ref: 'vault' });
     bars('z', X(15), -4.5, 7, UP, 5, 1);
@@ -2716,7 +2783,7 @@ loadEpochLevel = function (index) {
     const gold = new THREE.Group(), gm = mat(0xfacc15, 0xca8a04);                         // sala B: Galinha de Ouro
     [[0, 1.3, 0, 1.6], [0, 2.7, .6, .8]].forEach(([a, b, c, r]) => { const s = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 10), gm); s.position.set(a, b, c); gold.add(s); });
     const cm = new THREE.Mesh(new THREE.BoxGeometry(.3, .5, .6), mat(0xef4444, 0xb91c1c)); cm.position.set(0, 3.6, .6); gold.add(cm); gold.position.set(X(71), 0, 30); add(gold); let pet = false;
-    things.push({ x: X(71), z: 30, r: 4, txt: () => pet ? null : '[E] Acariciar a Galinha de Ouro', act: () => { if (pet) return; pet = true; gameState.feathers += 150; gameState.stats.feathers += 150; updateHUD(); toast('🐔✨ A Galinha de Ouro botou 150 penas e disse "cocoricó" em latim.'); } });
+    registerThing({ x: X(71), z: 30, r: 4, txt: () => pet ? null : '[E] Acariciar a Galinha de Ouro', act: () => { if (pet) return; pet = true; gameState.feathers += 150; gameState.stats.feathers += 150; updateHUD(); toast('🐔✨ A Galinha de Ouro botou 150 penas e disse "cocoricó" em latim.'); } });
     [[-74, 70], [-74, 74], [-68, 74]].forEach(([x, z]) => heal(X(x), z)); chest(X(-72), 66);   // sala C: frango frito
     terminal(X(-67), 68, 0, () => { gameState.shield = Math.min(100, gameState.shield + 50); updateHUD(); toast('🍗 SALA DO FRANGO FRITO: +50 de escudo. Canibalismo? Que nada, é só milho.'); }, 'Comer o frango frito (?)');
     [[-52, 40], [0, 40], [52, 40], [0, -10], [0, -46]].forEach(([x, z]) => [-1, 1].forEach(s => addTorch(x + s * 9, 4.6, z + (z > 0 ? 2 : -2))));
@@ -2746,6 +2813,13 @@ updateLevel = function () {
     for (let i = pk.length - 1; i >= 0; i--) { const k = pk[i]; k.mesh.rotation.y += .04; if (near(k.x, k.z) < 2.8 && Math.abs(feet() - k.y) < 3) { scene.remove(k.mesh); pk.splice(i, 1); k.fn(); } }
     doors.forEach(d => { const th = things.find(t => t.x === d.x && t.z === d.z && t.auto); if (th) th.auto(); });
     secretWalls.forEach(s => { if (s.hp <= 0) s.done = 1; });
+    interactionMarkers.forEach(thing => {
+        const hint = thing.txt();
+        const onCurrentFloor = thing.lv === undefined || thing.lv === plv();
+        const visible = onCurrentFloor && typeof hint === 'string' && hint.includes('[E]');
+        const marker = thing.marker;
+        marker.group.visible = visible;
+    });
     const t = nearThing(), el = document.getElementById('hub-hint'), hint = t ? t.txt() : '';
     el.innerText = hint; el.classList.toggle('hidden', !hint);
     if (!gameState.bossSpawned && L.boss.open && p.z < -52) { gameState.bossSpawned = true; spawnEnemy(EP.chickenType, true, 3); toast('⚠️ O CHEFE DESPERTOU!'); }
@@ -2900,7 +2974,7 @@ function e2() {
     [[-20, 30], [20, 30], [-20, -10], [20, -10], [-60, 10], [60, 10]].forEach(([x, z]) => tree(x, z));
     [[-60, 50], [60, 50], [0, 30], [0, -30]].forEach(([x, z]) => { heal(x, z); ammo(x + 2, z); });
     const spawnW = (n) => { const before = enemies.length; spawnIn(-70, 70, -40, 40, n, L); return enemies.length - before; };
-    things.push({ x: 0, z: 50, r: 6,
+    registerThing({ x: 0, z: 50, r: 6,
         txt: () => L.wave >= 3 && !L.on ? '🏆 Arena vencida — siga ao norte, o portão do chefe está aberto' : L.on ? '⚔️ Onda ' + L.wave + '/3 — restam ' + alive(L) + ' galinhas' : '[E] Tocar o sino (onda ' + (L.wave + 1) + '/3)',
         act: () => {
             if (L.on || L.wave >= 3) return; L.on = true; L.wave++; L.k0 = gameState.killsInEpoch;
@@ -2932,7 +3006,7 @@ function e3() {
     terminal(-40, 48, UP, () => { L.known = true; toast('📟 CÓDIGO: ' + L.seq.map(i => DN[i]).join(' ') + ' — use na porta de segurança!'); }, 'Ler terminal de dados');
     const lift = L.lift; L.lm = B(0, 0, -8, 8, .5, 8, mat(0x9ca3af, 0x222222)); L.lm.position.y = -.2;
     surf.push({ x0: -4, x1: 4, z0: -12, z1: -4, lift });
-    things.push({ x: 0, z: -8, r: 7, txt: () => '[E] Elevador ' + (lift.t ? '▼ descer' : '▲ subir'), act: () => { lift.t = lift.t ? 0 : UP; audio.playPickup(); } });
+    registerThing({ x: 0, z: -8, r: 7, txt: () => '[E] Elevador ' + (lift.t ? '▼ descer' : '▲ subir'), act: () => { lift.t = lift.t ? 0 : UP; audio.playPickup(); } });
     deck(-20, 20, -30, -12); const dm = levelObstacles[levelObstacles.length - 1], sf = surf[surf.length - 1];
     key('red', 0, -24, UP); const kp = pk[pk.length - 1], f0 = kp.fn;
     kp.fn = () => { f0(); toast('💥 A PONTE DESMORONA!'); audio.playExplosion(); scene.remove(dm); const i = surf.indexOf(sf); if (i >= 0) surf.splice(i, 1); };
@@ -2945,17 +3019,43 @@ function e3() {
 // ---- ERA 4 · CYBERPUNK (híbrido): teletransporte + alteração do mapa; hackear 3 nós, a muralha cai ----
 function pad(x, z, tx, tz, lab) {
     B(x, 0.02, z, 4, .1, 4, mat(0x22d3ee, 0x0e7490));
-    things.push({ x, z, r: 3.5, txt: () => '[E] Teleportar ' + lab, act: () => { playerObj.position.set(tx, PLAYER_HEIGHT, tz); velX = 0; velZ = 0; audio.playPickup(); } });
+    registerThing({ x, z, r: 3.5, txt: () => '[E] Teleportar ' + lab, act: () => { playerObj.position.set(tx, PLAYER_HEIGHT, tz); velX = 0; velZ = 0; audio.playPickup(); } });
 }
 function e4() {
     const W0 = Wl(0, 0, 156, T); L.nodes = 0;
-    const node = (x, z, n) => { let on = false; terminal(x, z, 0, () => {
-        if (on) return; on = true; L.nodes++; audio.playPickup(); toast('💻 NÓ ' + L.nodes + '/3 hackeado'); spawnIn(x - 20, x + 20, z - 14, z + 14, 3);
+    const node = (x, z, n) => {
+        let on = false;
+        const computer = new THREE.Group();
+        const housing = new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.65, roughness: 0.4 });
+        const screen = new THREE.MeshStandardMaterial({ color: 0x06b6d4, emissive: 0x0891b2, emissiveIntensity: 1.1 });
+        const keyboard = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.3, roughness: 0.55 });
+        const part = (geometry, material, x0, y0, z0) => {
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(x0, y0, z0);
+            computer.add(mesh);
+            return mesh;
+        };
+        part(new THREE.BoxGeometry(1.8, 0.65, 1.2), housing, 0, 0.34, 0);
+        part(new THREE.BoxGeometry(0.16, 0.22, 0.16), housing, 0, 0.78, -0.25);
+        part(new THREE.BoxGeometry(1.7, 1.25, 0.18), housing, 0, 1.48, -0.34);
+        part(new THREE.PlaneGeometry(1.42, 0.94), screen, 0, 1.5, -0.235);
+        part(new THREE.BoxGeometry(1.18, 0.08, 0.66), keyboard, 0, 0.74, 0.38);
+        for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 8; col++) {
+                part(new THREE.BoxGeometry(0.09, 0.025, 0.09), housing, -0.49 + col * 0.14, 0.795, 0.18 + row * 0.14);
+            }
+        }
+        part(new THREE.BoxGeometry(0.12, 0.07, 0.06), screen, -0.55, 0.36, 0.61);
+        computer.position.set(x, 0, z);
+        addObj(computer);
+        registerThing({ x, z, r: 4.5, txt: () => on ? null : '[E] Hackear nó ' + n, act: () => {
+        if (on) return; on = true; screen.color.setHex(0x22c55e); screen.emissive.setHex(0x16a34a); L.nodes++; audio.playPickup(); toast('💻 NÓ ' + L.nodes + '/3 hackeado'); spawnIn(x - 20, x + 20, z - 14, z + 14, 3);
         if (L.nodes === 3) {
             scene.remove(W0.mesh); const i = colliders.indexOf(W0.c); if (i >= 0) colliders.splice(i, 1); nav.ver++;
             L.keys.red = 1; hudKeys(); audio.playExplosion(); toast('🏙️ OS PRÉDIOS SE RECONFIGURAM — a muralha caiu e o portão do chefe abriu!'); openDoor(L.boss);
         }
-    }, 'Hackear nó ' + n); };
+    } });
+    };
     node(-45, 45, 1); node(-45, -25, 2); node(45, -30, 3);
     pad(45, 45, 40, -15, '→ Distrito Norte'); pad(-30, -10, -30, 38, '→ Praça');
     [[-20, 55], [20, 55], [-60, 20], [60, 20], [-20, -20], [20, -20], [60, -10]].forEach(([x, z]) => tree(x, z));
@@ -3045,7 +3145,7 @@ function e8() {
         const c = L.past ? 0x8b5a2b : EP.skyColor, f = L.past ? 0x6b4a2b : EP.fogColor; scene.background = new THREE.Color(c); scene.fog.color.set(f); nav.ver++;
     };
     tog(); B(0, 0, 50, 2, 3, 2, mat(0x818cf8, 0x4338ca));
-    things.push({ x: 0, z: 50, r: 6, txt: () => '[E] Máquina do Tempo (' + (L.past ? 'voltar ao PRESENTE' : 'viajar ao PASSADO') + ')', act: () => { L.past = !L.past; tog(); audio.playExplosion(); toast(L.past ? '⏳ PASSADO: a passagem OESTE está aberta; a LESTE fechou.' : '⏳ PRESENTE: a passagem LESTE está aberta; a OESTE fechou.'); } });
+    registerThing({ x: 0, z: 50, r: 6, txt: () => '[E] Máquina do Tempo (' + (L.past ? 'voltar ao PRESENTE' : 'viajar ao PASSADO') + ')', act: () => { L.past = !L.past; tog(); audio.playExplosion(); toast(L.past ? '⏳ PASSADO: a passagem OESTE está aberta; a LESTE fechou.' : '⏳ PRESENTE: a passagem LESTE está aberta; a OESTE fechou.'); } });
     L.cr = 0;
     const crystal = (x, z) => { const g = new THREE.Mesh(new THREE.OctahedronGeometry(1), mat(0xe879f9, 0x86198f)); g.position.set(x, 2.2, z); add(g);
         pk.push({ mesh: g, x, z, y: 0, fn: () => { L.cr++; audio.playPickup(); toast('💎 CRISTAL DO TEMPO ' + L.cr + '/2');
@@ -3117,8 +3217,11 @@ function buildHubRooms() {
         const dx = Math.sin(r.b) * 27.5, dz = Math.cos(r.b) * 27.5;
         const g = new THREE.Group(); g.position.set(dx, 0, dz); g.lookAt(0, 0, 0);
         const pl = frame(g, null, col, ok);
-        const lb = makeLabel(r.name, ok ? '▶ ENTRAR' : '🔒 Eras ' + (r.eras[0] + 1) + ' e ' + (r.eras[1] + 1), css); lb.position.y = 8; g.add(lb);
-        addObj(g); hubDoors.push({ r, x: dx, z: dz, ok, pl });
+        const sign = makeSignboard(r.name, ok ? 'ENTRAR' : 'BLOQUEADO: ERAS ' + (r.eras[0] + 1) + ' E ' + (r.eras[1] + 1), css, 6.4, 1.65, 1.05);
+        sign.position.y = 7.05; g.add(sign);
+        const marker = makeInteractionRing();
+        marker.group.position.y = 0.06; g.add(marker.group);
+        addObj(g); hubDoors.push({ r, x: dx, z: dz, ok, pl, marker });
         if (!ok) return;
         // ---- interior da sala (longe do HUB, escondido pela parede e pela névoa) ----
         const cx = -150 + 100 * i, cz = 160, fl = mat(r.floor), wl = mat(r.wall); r.cx = cx; r.cz = cz;
@@ -3128,21 +3231,27 @@ function buildHubRooms() {
         [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => { bx(1.6, 9, 1.6, wl, cx + a * 13.5, 4.5, cz + b * 13.5); bx(1.9, 0.5, 1.9, glow(r.col), cx + a * 13.5, 7.5, cz + b * 13.5); });
         const li = new THREE.PointLight(r.col, 1.4, 48); li.position.set(cx, 7, cz - 3); addObj(li);
         const ex = new THREE.Group(); ex.position.set(cx, 0, cz + 14.2); frame(ex, null, 0x22d3ee, true);
-        const el = makeLabel('⬅ VOLTAR AO HUB', 'Saída', '#22d3ee'); el.position.y = 7.4; ex.add(el); addObj(ex);
+        const exitSign = makeSignboard('VOLTAR AO HUB', 'SAIDA', '#22d3ee', 5.8, 1.55, 1.05);
+        exitSign.position.y = 7.05;
+        const exitMarker = makeInteractionRing();
+        exitMarker.group.position.y = 0.06;
+        ex.add(exitSign, exitMarker.group); addObj(ex);
+        r.exitMarker = exitMarker;
         // mercador
         const m = r.merchant, stall = new THREE.Group(); stall.position.set(cx, 0, cz - 9);
         bx(7, 1.2, 1.6, wood, 0, 0.6, 0, stall); bx(8.4, 0.3, 4.5, mat(r.col), 0, 3.8, -0.8, stall);
         [-3.9, 3.9].forEach(s => bx(0.3, 3.8, 0.3, wood, s, 1.9, 1.2, stall));
-        const sl = makeLabel('🛒 ' + m.name, 'Loja [E]', '#fbbf24'); sl.position.set(0, 5.8, 0); stall.add(sl); addObj(stall);
+        const merchantSign = makeSignboard(m.name, 'LOJA [E]', '#fbbf24', 5.8, 1.4, 0.9);
+        merchantSign.position.set(0, 4.85, -0.8); stall.add(merchantSign); addObj(stall);
         colliders.push({ box: true, minX: cx - 3.5, maxX: cx + 3.5, minZ: cz - 9.8, maxZ: cz - 8.2 });
         const mn = createNpc(m.color, m.hat, 1.5); mn.position.set(cx, 0, cz - 11); addObj(mn);
         hubStations.push({ type: 'rshop', x: cx, z: cz - 9, range: 6, label: 'Falar com ' + m.name + ' (Loja)', npc: mn, room: r });
         // missões
         r.quests.forEach((q, j) => {
             const x = cx + (j ? 8 : -8), z = cz - 2, npc = createNpc(q.color, 0x7e22ce, 1.4); npc.position.set(x, 0, z);
-            const t = questTag(q), spr = makeLabel(q.npc, t[0], t[1]); spr.position.set(0, 3.2, 0); npc.add(spr); addObj(npc);
+            addObj(npc);
             colliders.push({ x, z, r: 1.2 });
-            hubStations.push({ type: 'quest', x, z, range: 5, label: 'Falar com ' + q.npc, q, npc, sprite: spr });
+            hubStations.push({ type: 'quest', x, z, range: 5, label: 'Falar com ' + q.npc, q, npc });
         });
         // portal da era extra desta sala
         const ei = EPOCHS.findIndex(e => e.room === r.id);
@@ -3153,9 +3262,13 @@ function buildHubRooms() {
             const tor = new THREE.Mesh(new THREE.TorusGeometry(2.1, 0.28, 10, 32), new THREE.MeshStandardMaterial({ color: pc, emissive: pc, emissiveIntensity: 0.9 })); tor.position.y = 3.4; pg.add(tor);
             const disc = new THREE.Mesh(new THREE.CircleGeometry(1.95, 32), new THREE.MeshBasicMaterial({ color: pc, transparent: true, opacity: 0.6, side: THREE.DoubleSide })); disc.position.y = 3.4; pg.add(disc);
             const ring = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.07, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffffff })); ring.position.y = 3.4; pg.add(ring);
-            const plb = makeLabel(EPOCHS[ei].name, dn ? '✔ COMPLETA' : '▶ ENTRAR', pcss); plb.position.y = 6.6; pg.add(plb);
+            const portalSign = makeSignboard(EPOCHS[ei].name, dn ? 'COMPLETA' : 'ENTRAR', pcss, 5.6, 1.55, 1.05);
+            portalSign.position.y = 7.05;
+            const marker = makeInteractionRing();
+            marker.group.position.y = 0.06;
+            pg.add(portalSign, marker.group);
             const pl2 = new THREE.PointLight(pc, 1.2, 16); pl2.position.set(0, 3.4, 2); pg.add(pl2);
-            addObj(pg); r.portal = { x: px, z: pz, i: ei, disc, ring };
+            addObj(pg); r.portal = { x: px, z: pz, i: ei, disc, ring, marker };
         }
     });
 }
@@ -3303,8 +3416,8 @@ function eMuseu() {
 function eArranha() {
     window.TOPFL = 2; L.cards = 0; shell(3); const SH = [-8, 8, 12, 28]; slab(1, [SH]); slab(2, [SH]);
     const lift = L.lift; L.lm = B(0, 0, 20, 14, .5, 14, mat(0x9ca3af, 0x222222)); L.lm.position.y = -.2; surf.push({ x0: -7, x1: 7, z0: 13, z1: 27, lift });
-    things.push({ x: 0, z: 20, r: 6, txt: () => '[E] Painel do elevador — ir ao andar ' + ((Math.round(lift.t / UP) + 1) % 3 + 1), act: () => { lift.t = (lift.t + UP) % (3 * UP); audio.playPickup(); } });
-    [0, 1, 2].forEach(f => things.push({ x: 0, z: 32, r: 8, lv: f || undefined, txt: () => '[E] Chamar elevador (andar ' + (f + 1) + ')', act: () => { lift.t = f * UP; audio.playPickup(); } }));
+    registerThing({ x: 0, z: 20, r: 6, txt: () => '[E] Painel do elevador — ir ao andar ' + ((Math.round(lift.t / UP) + 1) % 3 + 1), act: () => { lift.t = (lift.t + UP) % (3 * UP); audio.playPickup(); } });
+    [0, 1, 2].forEach(f => registerThing({ x: 0, z: 32, r: 8, lv: f || undefined, txt: () => '[E] Chamar elevador (andar ' + (f + 1) + ')', act: () => { lift.t = f * UP; audio.playPickup(); } }));
     link(0, 1, 0, 31, 0, 20); link(1, 2, 0, 31, 0, 20);
     const zs = [-46, -14, 18, 50]; [0, 1, 2].forEach(f => { wing(f, -1, 30, zs); wing(f, 1, 30, zs); });
     [0, 1, 2].forEach(f => { for (const x of [-22, -14, 14, 22]) for (const z of [-36, -26, 40, 48]) prop(f, x, z, 3.2, 1.6, 1.1, 0x64748b); lamp(f, 0, -20); lamp(f, 0, 40); lamp(f, -50, 0); lamp(f, 50, 0); light(f, 0, 0, 0xcfe8ff); });
