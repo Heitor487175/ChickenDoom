@@ -1,236 +1,10 @@
-        class SoundEngine {
-            constructor() {
-                this.ctx = null;
-                this.masterVolume = 0.8;
-            }
+        import { ChickenEnemy, BossEnemy } from "./game/enemies/Enemy.js";
+        import { GameRuntime } from "./game/GameRuntime.js";
+        import { EPOCHS, HUB_COLORS } from "./game/maps/MapCatalog.js";
+        import { MapManager } from "./game/maps/MapManager.js";
 
-            init() {
-                if (!this.ctx) {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    this.ctx = new AudioContext();
-                }
-                if (this.ctx.state === 'suspended') {
-                    this.ctx.resume();
-                }
-            }
-
-            setMasterVolume(val) {
-                this.masterVolume = parseFloat(val);
-            }
-
-            playShoot() {
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(350, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.09);
-                gain.gain.setValueAtTime(0.2 * this.masterVolume, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.09);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.09);
-            }
-
-            playJump() {
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(140, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(360, this.ctx.currentTime + 0.18);
-                gain.gain.setValueAtTime(0.25 * this.masterVolume, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.18);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.18);
-            }
-
-            playHit() {
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(220, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 0.08);
-                gain.gain.setValueAtTime(0.25 * this.masterVolume, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.08);
-            }
-
-            playChickenCluck() {
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'triangle';
-                const now = this.ctx.currentTime;
-                osc.frequency.setValueAtTime(520, now);
-                osc.frequency.setValueAtTime(740, now + 0.04);
-                osc.frequency.setValueAtTime(300, now + 0.1);
-                gain.gain.setValueAtTime(0.3 * this.masterVolume, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(now + 0.16);
-            }
-
-            playPickup() {
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(950, this.ctx.currentTime + 0.12);
-                gain.gain.setValueAtTime(0.2 * this.masterVolume, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.12);
-            }
-
-            playReload(phase) {
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                const t = this.ctx.currentTime;
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(phase ? 520 : 180, t);
-                osc.frequency.exponentialRampToValueAtTime(phase ? 260 : 90, t + 0.07);
-                gain.gain.setValueAtTime(0.18 * this.masterVolume, t);
-                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(t + 0.08);
-            }
-
-            playEmpty() {
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                const t = this.ctx.currentTime;
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(900, t);
-                gain.gain.setValueAtTime(0.15 * this.masterVolume, t);
-                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.04);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(t + 0.04);
-            }
-
-            playPlayerDamage() {
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(130, this.ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(30, this.ctx.currentTime + 0.22);
-                gain.gain.setValueAtTime(0.4 * this.masterVolume, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.22);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.22);
-            }
-
-            playExplosion() {
-                if (!this.ctx) return;
-                const bufferSize = this.ctx.sampleRate * 0.35;
-                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    data[i] = Math.random() * 2 - 1;
-                }
-                const noise = this.ctx.createBufferSource();
-                noise.buffer = buffer;
-                const filter = this.ctx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(600, this.ctx.currentTime);
-                filter.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 0.35);
-                const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.5 * this.masterVolume, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
-                noise.connect(filter);
-                filter.connect(gain);
-                gain.connect(this.ctx.destination);
-                noise.start();
-                noise.stop(this.ctx.currentTime + 0.35);
-            }
-        }
-
-        const audio = new SoundEngine();
-
-        // DEFINIÇÃO COMPLETA DAS 5 DIMENSÕES TEMPORAIS
-        const EPOCHS = [
-            {
-                id: 1, name: "1. Pré-História & Templo", subtitle: "Galinhas Infectadas Primitivas",
-                wallColor: 0x8b5a2b, floorColor: 0x4a2e16, skyColor: 0x3d1706, fogColor: 0x2e0e03,
-                chickenType: "ancient", bossType: "warrior_chicken", enemiesToKill: 14, secretLoot: null
-            },
-            {
-                id: 2, name: "2. Coliseu Romano", subtitle: "Gladiadoras Mortas-Vivas",
-                wallColor: 0xa1887f, floorColor: 0x5d4037, skyColor: 0x2a1a14, fogColor: 0x20140f,
-                chickenType: "roman", bossType: "gladiator_boss", enemiesToKill: 17, secretLoot: 'sword'
-            },
-            {
-                id: 3, name: "3. Fortaleza Medieval", subtitle: "Cavaleiras Amaldiçoadas",
-                wallColor: 0x6b7280, floorColor: 0x374151, skyColor: 0x111827, fogColor: 0x0b1220,
-                chickenType: "knight", bossType: "knight_boss", enemiesToKill: 21, secretLoot: null
-            },
-            {
-                id: 4, name: "4. Cidade Cyberpunk", subtitle: "Ciber-Galinhas Hackeadas",
-                wallColor: 0x1e3a8a, floorColor: 0x0f172a, skyColor: 0x020617, fogColor: 0x020617,
-                chickenType: "cyber", bossType: "cyber_boss", enemiesToKill: 25, secretLoot: null
-            },
-            {
-                id: 5, name: "5. Tumba do Faraó", subtitle: "Múmias do Deserto",
-                wallColor: 0xb8860b, floorColor: 0x8a6a2a, skyColor: 0x4a3410, fogColor: 0x3a2a0c,
-                chickenType: "mummy", bossType: "pharaoh_boss", enemiesToKill: 28, secretLoot: 'alien'
-            },
-            {
-                id: 6, name: "6. Pântano Sombrio", subtitle: "Galinhas do Lodo",
-                wallColor: 0x2f4f2f, floorColor: 0x1a2e1a, skyColor: 0x0b1a0b, fogColor: 0x0a160a,
-                chickenType: "swamp", bossType: "swamp_boss", enemiesToKill: 32, secretLoot: null
-            },
-            {
-                id: 7, name: "7. Galinheiro Infernal", subtitle: "Demônios Emplumados",
-                wallColor: 0x7f1d1d, floorColor: 0x450a0a, skyColor: 0x2b0505, fogColor: 0x2b0707,
-                chickenType: "demon", bossType: "demon_boss", enemiesToKill: 36, secretLoot: null
-            },
-            {
-                id: 8, name: "8. O Núcleo Cósmico", subtitle: "O Fim do Tempo",
-                wallColor: 0x581c87, floorColor: 0x1e1b4b, skyColor: 0x0a0014, fogColor: 0x0a0014,
-                chickenType: "cosmic", bossType: "supreme_chicken", enemiesToKill: 44, secretLoot: null
-            },
-            {
-                id: 9, name: "9. Museu Vulcânico", subtitle: "Ancestrais das Cinzas", extra: true, room: 'r1',
-                wallColor: 0x7c2d12, floorColor: 0x292524, skyColor: 0x1c0a05, fogColor: 0x2a0f05,
-                chickenType: "ancient", bossType: "warrior_chicken", enemiesToKill: 30, secretLoot: null
-            },
-            {
-                id: 10, name: "10. Arranha-Céu Corporativo", subtitle: "Zumbis de Terno e Circuito", extra: true, room: 'r2',
-                wallColor: 0x475569, floorColor: 0x1e293b, skyColor: 0x0b1020, fogColor: 0x0a0f1c,
-                chickenType: "cyber", bossType: "cyber_boss", enemiesToKill: 34, secretLoot: null
-            },
-            {
-                id: 11, name: "11. Prédio em Colapso", subtitle: "Moradores Amaldiçoados", extra: true, room: 'r3',
-                wallColor: 0x365314, floorColor: 0x1a2e05, skyColor: 0x061208, fogColor: 0x0a1a0c,
-                chickenType: "swamp", bossType: "swamp_boss", enemiesToKill: 38, secretLoot: null
-            },
-            {
-                id: 12, name: "12. Biblioteca Atemporal", subtitle: "Guardiãs dos Livros do Tempo", extra: true, room: 'r4',
-                wallColor: 0x581c87, floorColor: 0x1e1b4b, skyColor: 0x0a0420, fogColor: 0x12062e,
-                chickenType: "cosmic", bossType: "supreme_chicken", enemiesToKill: 46, secretLoot: null
-            }
-        ];
+        const gameRuntime = new GameRuntime({ initializeEngine: initEngine, animate });
+        const audio = gameRuntime.audio;
 
         let gameState = {
             currentEpochIndex: 0,
@@ -590,6 +364,48 @@
 
             window.addEventListener('resize', onWindowResize);
             setupInputListeners();
+            gameRuntime.initializeProgress({
+                storage: LS,
+                state: gameState,
+                saveKey: SAVE_KEY,
+                runKey: RUN_KEY,
+                lastRunKey: LAST_RUN_KEY,
+                saveKeys: SAVE_KEYS,
+                defaultSave: DEFAULT_SAVE,
+                weaponMigration: WEAPON_MIGRATE,
+                weapons: WEAPONS,
+                callbacks: {
+                    recalculateStats: recalcStats,
+                    refillAllAmmo,
+                    equipWeapon,
+                    renderDifficultyButtons: renderDiffButtons
+                }
+            });
+            gameRuntime.initializeCombat({
+                state: gameState,
+                getEnemies: () => enemies,
+                getScene: () => scene,
+                audio,
+                effects: {
+                    triggerHitmarker,
+                    spawnDamageNumber,
+                    createFeatherParticles,
+                    updateBossHPBar,
+                    spawnFeatherItem,
+                    maybeDropAmmo,
+                    hasShip,
+                    updateHUD,
+                    checkGates,
+                    handleBossDefeated: enemy => {
+                        document.getElementById('boss-hud').classList.add('hidden');
+                        const epoch = EPOCHS[gameState.currentEpochIndex];
+                        const bonus = completeLevel(gameState.currentEpochIndex);
+                        if (epoch.extra) showGameMessage("ERA EXTRA SUPERADA!", `O chefe da ${epoch.name} caiu! +${bonus} 🪶 de bônus. Volte à sala do HUB para entrar de novo ou escolher outro portal.`, "VOLTAR AO HUB");
+                        else if (gameState.currentEpochIndex === 7) showVictoryScreen();
+                        else showGameMessage("ERA SUPERADA!", `O chefe da ${epoch.name} foi derrotado! +${bonus} 🪶 de bônus. A próxima fase foi liberada no HUB.`, "VOLTAR AO HUB");
+                    }
+                }
+            });
             migrateLegacySave();
             try { const d = parseInt(LS.getItem(NEW_DIFF_KEY)); if (d >= 0 && d < DIFFS.length) gameState.difficulty = d; } catch (e) {}
             recalcStats();
@@ -597,14 +413,13 @@
             renderRunSlots();
             equipWeapon(gameState.currentWeapon);
             loadHub();
-            setInterval(() => { if (activeRun && gameState.isPlaying && !gameState.isPaused && !gameState.isDead) gameState.playTime++; }, 1000);
+            setInterval(() => { if (gameRuntime.activeRun && gameState.isPlaying && !gameState.isPaused && !gameState.isDead) gameState.playTime++; }, 1000);
             setInterval(saveProgress, 30000);
             window.addEventListener('beforeunload', saveProgress);
         }
 
                 const ARENA = 82;
         const SAVE_KEY = 'chickenDoomSave2';
-        const HUB_COLORS = [0xf59e0b, 0xfacc15, 0xa78bfa, 0x22d3ee, 0xd97706, 0x65a30d, 0xef4444, 0xd946ef];
         let ZONE_Z = [[34, 76], [-6, 22], [-40, -18], [-76, -60]], ZONE_N = [0, 0, 0], BOSS_TRIGGER = -49;
         let hubPortals = [], hubStations = [], hubCrystal = null, colliders = [], gates = [], secretWalls = [];
         // navegação das galinhas (flow field em grade) + esquiva com pulo duplo
@@ -703,67 +518,26 @@
         const RUN_SLOTS = 3, RUN_KEY = n => 'chickenDoomRun' + n, LAST_RUN_KEY = 'chickenDoomLastRun', NEW_DIFF_KEY = 'chickenDoomNewDiff';
         const DEFAULT_SAVE = JSON.parse(JSON.stringify(SAVE_KEYS.reduce((o, k) => { o[k] = gameState[k]; return o; }, {})));
         const CP_NAMES = ['Início da fase', 'Área 2 (portão 1 aberto)', 'Área 3 (portão 2 aberto)', 'Arena do Chefe'];
-        let activeRun = 0, runCreated = 0, delArm = 0, msgCheckpoint = false;
+        let delArm = 0, msgCheckpoint = false;
 
         function readRun(n) {
-            try { const r = JSON.parse(LS.getItem(RUN_KEY(n))); return r && r.data ? r : null; } catch (e) { return null; }
+            return gameRuntime.readRun(n);
         }
         function saveProgress() {
-            if (!activeRun) return;
-            try {
-                const d = {};
-                SAVE_KEYS.forEach(k => { d[k] = gameState[k]; });
-                LS.setItem(RUN_KEY(activeRun), JSON.stringify({ v: 2, created: runCreated, updated: Date.now(), data: d }));
-                LS.setItem(LAST_RUN_KEY, String(activeRun));
-            } catch (e) {}
+            gameRuntime.saveProgress();
         }
         // save antigo (único) vira a RUN 1
         function migrateLegacySave() {
-            try {
-                const old = LS.getItem(SAVE_KEY);
-                if (old && !readRun(1)) {
-                    LS.setItem(RUN_KEY(1), JSON.stringify({ v: 2, created: Date.now(), updated: Date.now(), data: JSON.parse(old) }));
-                    LS.removeItem(SAVE_KEY);
-                }
-            } catch (e) {}
+            gameRuntime.migrateLegacySave();
         }
         // saves com as armas antigas: cada uma vira a sua sucessora (mantendo posse e nível)
         const WEAPON_MIGRATE = { rail: 'eye', flame: 'lance', egg: 'cannon', tesla: 'alien', minigun: 'sword' };
         function migrateWeaponSave() {
-            const g = gameState;
-            Object.keys(WEAPON_MIGRATE).forEach(o => {
-                const n = WEAPON_MIGRATE[o];
-                if (g.weapons[o]) g.weapons[n] = true;
-                if (g.wLvl[o]) g.wLvl[n] = Math.max(g.wLvl[n] || 1, g.wLvl[o]);
-                delete g.weapons[o]; delete g.wLvl[o];
-                g.hotbar = g.hotbar.map(x => x === o ? n : x);
-                if (g.currentWeapon === o) g.currentWeapon = n;
-            });
-            g.weapons.pistol = true; if (!g.wLvl.pistol) g.wLvl.pistol = 1;
-            Object.keys(g.weapons).forEach(id => { if (!WEAPONS[id]) delete g.weapons[id]; });
-            g.hotbar = g.hotbar.map(x => x && g.weapons[x] ? x : null);
-            if (!g.hotbar.some(Boolean)) g.hotbar[0] = 'pistol';
-            if (!g.weapons[g.currentWeapon]) g.currentWeapon = g.hotbar.find(Boolean);
+            gameRuntime.migrateWeaponSave();
         }
         // carrega (ou cria do zero) uma run e deixa o estado pronto para jogar
         function selectRun(n, fresh) {
-            const diff = gameState.difficulty; // dificuldade escolhida na tela inicial (vale para runs novas)
-            SAVE_KEYS.forEach(k => { gameState[k] = JSON.parse(JSON.stringify(DEFAULT_SAVE[k])); });
-            gameState.ammoStore = {};
-            const sv = fresh ? null : readRun(n);
-            if (sv) {
-                SAVE_KEYS.forEach(k => { if (sv.data[k] !== undefined) gameState[k] = sv.data[k]; });
-                runCreated = sv.created || Date.now();
-            } else { gameState.difficulty = diff; runCreated = Date.now(); }
-            migrateWeaponSave();
-            activeRun = n;
-            gameState.health = 100;
-            recalcStats();
-            gameState.health = gameState.maxHealth;
-            gameState.shield = 50;
-            refillAllAmmo();
-            equipWeapon(gameState.currentWeapon);
-            renderDiffButtons();
+            gameRuntime.selectRun(n, fresh);
         }
         function startRun(n, fresh) {
             audio.init();
@@ -853,7 +627,7 @@
 
         function setDifficulty(i) {
             gameState.difficulty = i; renderDiffButtons();
-            if (activeRun) saveProgress(); else { try { LS.setItem(NEW_DIFF_KEY, String(i)); } catch (e) {} renderRunSlots(); }
+            if (gameRuntime.activeRun) saveProgress(); else { LS.setItem(NEW_DIFF_KEY, String(i)); renderRunSlots(); }
         }
         function renderDiffButtons() {
             document.getElementById('diff-buttons').innerHTML = DIFFS.map((d, i) =>
@@ -1532,7 +1306,7 @@
             if (gameState.inHub) return;
             const owned = Object.keys(WEAPONS).filter(id => gameState.weapons[id]);
             if (!owned.length) return;
-            const n = enemy.isBoss ? 3 : (Math.random() < AMMO_DROP_CHANCE ? 1 : 0);
+            const n = enemy.getAmmoDropCount(AMMO_DROP_CHANCE);
             for (let k = 0; k < n; k++) {
                 const id = owned[Math.floor(Math.random() * owned.length)], w = WEAPONS[id];
                 const amount = Math.max(1, Math.round(w.mag * (0.6 + Math.random() * 0.9)));
@@ -1545,34 +1319,7 @@
 
         // ===== COMBATE =====
         function damageEnemy(enemy, dmg) {
-            enemy.hp -= dmg;
-            triggerHitmarker();
-            spawnDamageNumber(dmg, dmg > 25);
-            audio.playHit();
-            createFeatherParticles(enemy.mesh.position, 4);
-            if (enemy.isBoss) updateBossHPBar();
-            if (enemy.hp > 0) return;
-            const j = enemies.indexOf(enemy);
-            if (j < 0) return;
-            audio.playChickenCluck();
-            spawnFeatherItem(enemy.mesh.position);
-            maybeDropAmmo(enemy);
-            scene.remove(enemy.mesh);
-            enemies.splice(j, 1);
-            gameState.killsInEpoch++;
-            gameState.totalKills++;
-            gameState.stats.kills++;
-            if (hasShip('vampiro')) { gameState.health = Math.min(gameState.maxHealth, gameState.health + 2); updateHUD(); }
-            checkGates();
-            const epoch = EPOCHS[gameState.currentEpochIndex];
-            if (enemy.isBoss) {
-                audio.playExplosion();
-                document.getElementById('boss-hud').classList.add('hidden');
-                const bonus = completeLevel(gameState.currentEpochIndex);
-                if (epoch.extra) showGameMessage("ERA EXTRA SUPERADA!", `O chefe da ${epoch.name} caiu! +${bonus} 🪶 de bônus. Volte à sala do HUB para entrar de novo ou escolher outro portal.`, "VOLTAR AO HUB");
-                else if (gameState.currentEpochIndex === 7) showVictoryScreen();
-                else showGameMessage("ERA SUPERADA!", `O chefe da ${epoch.name} foi derrotado! +${bonus} 🪶 de bônus. A próxima fase foi liberada no HUB.`, "VOLTAR AO HUB");
-            }
+            gameRuntime.damageEnemy(enemy, dmg);
         }
         function explode(b) {
             if (b.exploded) return;
@@ -1776,19 +1523,11 @@
             mesh.position.set(spawnX, 0, spawnZ);
             scene.add(mesh);
 
-            const enemyObj = {
-                mesh: mesh,
-                hp: hp,
-                maxHp: hp,
-                speed: speed,
-                isBoss: isBoss,
-                type: type,
-                lastAttack: 0,
-                lastRangedAttack: 0,
-                bobTimer: Math.random() * 10
-            };
-
-            enemyObj.rs = 0; enemyObj.dur = isBoss ? 2000 : 1100; enemyObj.hh = isBoss ? 8 : 3.6; mesh.position.y = -enemyObj.hh;
+            const EnemyType = isBoss ? BossEnemy : ChickenEnemy;
+            const enemyObj = new EnemyType({ mesh, hp, speed, type });
+            enemyObj.dur = enemyObj.getRiseDuration();
+            enemyObj.hh = enemyObj.getHeight();
+            mesh.position.y = -enemyObj.hh;
             enemies.push(enemyObj);
 
             if (isBoss) {
@@ -2581,7 +2320,7 @@
         }
 
 /* ===== CAMADA VISUAL QUAKE ===== */
-const LS = { getItem: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, setItem: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} }, removeItem: k => { try { localStorage.removeItem(k); } catch (e) {} } };
+const LS = gameRuntime.storage;
 const Q = { torches: [], sky: [] };
 const T = {};
 (function () {
@@ -3096,7 +2835,15 @@ CP_NAMES[1] = CP_NAMES[2] = 'Reator (chefe à frente)';
 
 /* ===== MAPAS 3.0: identidade própria por era (1 Exploração · 2 Arena · 3 Vertical) ===== */
 const _std = loadEpochLevel, _stdU = updateLevel, GEN = [e1, e2, e3, e4, e5, e6, e7, e8];
-loadEpochLevel = function (i) { window.TOPFL = 1; if (!GEN[i]) return _std(i); base(i); GEN[i](i); finish(i); };
+const mapManager = new MapManager({
+    epochs: EPOCHS,
+    buildBase: base,
+    finishMap: finish,
+    fallback: _std,
+    beforeBuild: () => { window.TOPFL = 1; }
+});
+GEN.forEach((builder, index) => mapManager.register(index, builder));
+loadEpochLevel = function (i) { return mapManager.build(i); };
 updateLevel = function () { _stdU(); if (L && L.upd) L.upd(); };
 const R = (x0, x1, z0, z1, n) => rooms.push({ x0, x1, z0, z1, n: Math.max(2, Math.round(n * EP.enemiesToKill / 28)) });
 const tree = (x, z) => { B(x, 0, z, 3.4, H, 3.4, WALL, 1); colliders.push({ x, z, r: 2.1 }); };
@@ -3535,6 +3282,7 @@ buyShop = function (id) {
 
 /* ===== PRÉDIOS (eras extras 9–12): kit de interiores com andares, salas, corredores e portas ===== */
 GEN[8] = eMuseu; GEN[9] = eArranha; GEN[10] = eColapso; GEN[11] = eBiblioteca;
+GEN.slice(8).forEach((builder, index) => mapManager.register(index + 8, builder));
 while (LORE.length < 12) LORE.push(LORE[LORE.length - 8]);
 const fw = (x, z, w, d, fl) => Wl(x, z, w, d, { lv: fl, y0: fl * UP, h: UP - .7 });
 const link = (a, b, x, z, x2, z2) => { L.links.push({ a, b, x, z, x2, z2 }, { a: b, b: a, x: x2, z: z2, x2: x, z2: z }); };
@@ -3859,6 +3607,5 @@ Object.assign(window, {
 });
 
 window.addEventListener('load', () => {
-    initEngine();
-    animate();
+    gameRuntime.start();
 });
