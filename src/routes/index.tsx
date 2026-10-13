@@ -17,7 +17,8 @@ function Home() {
     if (!host) return;
     (async () => {
       try {
-        const html = await fetch("/game.html").then((r) => {
+        const gameUrl = new URL("game.html", window.location.href).toString();
+        const html = await fetch(gameUrl).then((r) => {
           if (!r.ok) throw new Error("não foi possível carregar o jogo");
           return r.text();
         });
