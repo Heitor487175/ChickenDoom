@@ -1,6 +1,12 @@
 node_modules/
 .project_id
 .github_repo
+.node_modules.lock
+.grok/
+.vercel/
+artifacts/
+attachments/
+release/
+screenshots/
 .env
 .env.*
-release/
