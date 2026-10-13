@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Chicken Doom">
+  <rect width="32" height="32" rx="6" fill="#140806"/>
+  <path fill="#b91c1c" d="M8.2 13.2c.5-4.2 2.6-6.4 4-3.2C13.4 6 15 5.2 16 8.2c1-3 2.6-2.2 3.8 1.8 1.4-3.2 3.5-1 4 3.2-2.2 1.5-4.2 1.2-6 .2-1.8 1-3.8 1.3-5.6-.2z"/>
+  <ellipse cx="16" cy="19.2" rx="10" ry="8.2" fill="#fde68a"/>
+  <circle cx="11.6" cy="17.6" r="2.35" fill="#84cc16"/>
+  <circle cx="20.4" cy="17.6" r="2.35" fill="#84cc16"/>
+  <path fill="#f59e0b" d="M13.1 21.4h5.8L16 26.4z"/>
+</svg>
