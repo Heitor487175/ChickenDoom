@@ -1,5 +1,9 @@
 {
   "name": "chickendoom-desktop",
+  "productName": "Chicken Doom",
+  "desktopName": "Chicken Doom",
+  "description": "Chicken Doom desktop launcher",
+  "author": "Heitor487175",
   "version": "1.0.0",
   "private": true,
   "main": "main.cjs",
