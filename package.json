@@ -104,6 +104,7 @@
         "from": "public",
         "to": "public",
         "filter": [
+          "crazygames.js",
           "game.html",
           "enemies.js",
           "vendor/**/*"

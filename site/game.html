@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CHICKEN DOOM - O Núcleo do Tempo</title>
+    <script async id="crazygames-sdk" src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
     <script src="./vendor/tailwind.js"></script>
     <script src="./vendor/three.min.js"></script>
+    <script src="./crazygames.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
 
@@ -586,6 +588,18 @@
         }
 
         const audio = new SoundEngine();
+        if (window.CrazyGamesBridge) {
+            let volumeBeforeAd = null;
+            window.CrazyGamesBridge.setAudioHandler(muted => {
+                if (muted) {
+                    if (volumeBeforeAd === null) volumeBeforeAd = audio.masterVolume;
+                    audio.setMasterVolume(0);
+                } else if (volumeBeforeAd !== null) {
+                    audio.setMasterVolume(volumeBeforeAd);
+                    volumeBeforeAd = null;
+                }
+            });
+        }
 
         // DEFINIÇÃO COMPLETA DAS 5 DIMENSÕES TEMPORAIS
         const EPOCHS = [
@@ -1191,6 +1205,7 @@
             document.getElementById('hud').classList.remove('hidden');
             document.getElementById('crosshair-container').classList.remove('hidden');
             gameState.isPlaying = true; gameState.isDead = false; gameState.isVictory = false;
+            if (window.CrazyGamesBridge) window.CrazyGamesBridge.setGameplayActive(true);
             gameState.startTime = performance.now();
             const cp = gameState.checkpoint;
             if (!fresh && cp && EPOCHS[cp.epoch]) respawnAtCheckpoint(); else loadHub();
@@ -2696,18 +2711,20 @@
             }
         }
 
-        function togglePause() {
+        function togglePause(reportLifecycle = true) {
             if (!gameState.isPlaying || gameState.isDead || gameState.isVictory || gameState.isUpgradeMenuOpen) return;
 
             gameState.isPaused = !gameState.isPaused;
             const pauseMenu = document.getElementById('pause-screen');
 
             if (gameState.isPaused) {
+                if (reportLifecycle && window.CrazyGamesBridge) window.CrazyGamesBridge.setGameplayActive(false);
                 document.exitPointerLock();
                 pauseMenu.classList.remove('hidden');
                 document.getElementById('btn-checkpoint').classList.toggle('hidden', !(gameState.checkpoint && !gameState.inHub));
                 isShooting = false;
             } else {
+                if (reportLifecycle && window.CrazyGamesBridge) window.CrazyGamesBridge.setGameplayActive(true);
                 pauseMenu.classList.add('hidden');
                 requestPointerLock();
             }
@@ -2721,6 +2738,7 @@
                 document.getElementById('crosshair-container').classList.remove('hidden');
                 loadHub();
                 gameState.isPlaying = true;
+                if (window.CrazyGamesBridge) window.CrazyGamesBridge.setGameplayActive(true);
                 requestPointerLock();
             });
 
@@ -2839,7 +2857,7 @@
             document.addEventListener('pointerlockchange', () => {
                 controlsEnabled = (document.pointerLockElement === document.body);
                 // perdeu o mouse sem menu aberto (ESC no jogo, alt-tab...): abre o pause
-                if (!document.pointerLockElement && wantsLock()) togglePause();
+                if (!document.pointerLockElement && wantsLock()) togglePause(false);
             });
             // se o navegador recusou travar o mouse (ESC não conta como gesto do usuário),
             // o próximo clique ou tecla trava o mouse e o jogo segue normalmente
@@ -2857,6 +2875,7 @@
             document.getElementById('btn-close-upgrade').addEventListener('click', toggleUpgradeMenu);
 
             const closeMessage = toCp => {
+                const isEraClear = document.getElementById('msg-title').innerText.includes('ERA SUPERADA');
                 document.getElementById('game-message-screen').classList.add('hidden');
                 msgCheckpoint = false;
                 if (gameState.isDead) {
@@ -2866,7 +2885,12 @@
                 }
                 if (toCp) respawnAtCheckpoint(); else loadHub();
                 gameState.isPlaying = true;
-                requestPointerLock();
+                if (window.CrazyGamesBridge) window.CrazyGamesBridge.setGameplayActive(true);
+                if (isEraClear && window.CrazyGamesBridge) {
+                    window.CrazyGamesBridge.requestMidgameAd(requestPointerLock);
+                } else {
+                    requestPointerLock();
+                }
             };
             document.getElementById('msg-btn').addEventListener('click', () => closeMessage(msgCheckpoint));
             document.getElementById('msg-btn2').addEventListener('click', () => closeMessage(false));
@@ -3145,6 +3169,7 @@
         function showGameMessage(title, desc, btnText, altText) {
             document.exitPointerLock();
             gameState.isPlaying = false;
+            if (window.CrazyGamesBridge) window.CrazyGamesBridge.setGameplayActive(false);
             msgCheckpoint = !!altText;
             const b2 = document.getElementById('msg-btn2');
             b2.innerText = altText || ''; b2.classList.toggle('hidden', !altText);
@@ -3160,6 +3185,7 @@
             document.exitPointerLock();
             gameState.isPlaying = false;
             gameState.isVictory = true;
+            if (window.CrazyGamesBridge) window.CrazyGamesBridge.setGameplayActive(false);
 
             const elapsedTimeMs = performance.now() - gameState.startTime;
             const secondsTotal = Math.floor(elapsedTimeMs / 1000);
@@ -3488,6 +3514,7 @@
             window.__doomBoot = true;
             initEngine();
             animate();
+            if (window.CrazyGamesBridge) window.CrazyGamesBridge.markLoadingComplete();
         };
         window.addEventListener('load', function () { if (window.__enemiesReady) window.bootGame(); });
     </script>
